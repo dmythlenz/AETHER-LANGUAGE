@@ -1,0 +1,38 @@
+{
+  "name": "Aether",
+  "scopeName": "source.aether",
+  "version": "0.1.0",
+  "fileTypes": [
+    "ae"
+  ],
+  "patterns": [
+    {
+      "match": "#.*$",
+      "name": "comment.line.number-sign.aether"
+    },
+    {
+      "match": "\\b(print|len|str|int|num|float|type|push|pop|get|set|keys|substr|startsWith|endsWith|contains|split|join|map|filter|reduce|range|min|max|abs|band|bor|bxor|shl|shr|wasmInstantiate|tensor|hyper|entangle|qpar|qpanic|dim|symbolic|evolve|bio|qawait|engine|engines|kae|aether|host|vhw_gpu_compute|vhw_tpu_attend|vhw_ram_write|vhw_net_scrape|vhw_qpu_apply|vhw_lpu_transmit|vhw_lightnet_route)\\b",
+      "name": "support.function.builtin.aether"
+    },
+    {
+      "match": "\\b(fn|let|mut|if|else|then|while|for|in|return|true|false|nil|import|class|match|as|qpanic|entangle|qpar|reversible|spatial|dim|tensor|hyper|umem|quantum|evolve|bio)\\b",
+      "name": "keyword.control.aether"
+    },
+    {
+      "match": "\\b(\\d+\\.\\d+|\\d+)\\b",
+      "name": "constant.numeric.aether"
+    },
+    {
+      "match": "\"(\\\\.|[^\"\\\\])*\"",
+      "name": "string.quoted.double.aether"
+    },
+    {
+      "match": "\\b(fn|->|=>|&&|\\|\\||==|!=|<=|>=|\\+=|-=|\\*=|/=|\\|>|\\?|:)\\.?",
+      "name": "keyword.operator.aether"
+    },
+    {
+      "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)(?=\\s*\\()",
+      "name": "entity.name.function.aether"
+    }
+  ]
+}
