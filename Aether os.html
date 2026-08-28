@@ -1,0 +1,2562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Æther OS Ultimate — Aether Language · ASI Core</title>
+  <style>
+    /* ===== global reset & variables ===== */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #050508;
+      --surface: #0b0b11;
+      --panel: #13131b;
+      --elevated: #1b1b25;
+      --border: #2a2a36;
+      --text: #f1f1f7;
+      --dim: #8c8ca0;
+      --accent: #8b7cff;
+      --accent2: #c4b5fd;
+      --green: #34d399;
+      --orange: #fbbf24;
+      --red: #f87171;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: ui-monospace, "Cascadia Code", "SF Mono", monospace;
+      --shadow: 0 18px 50px rgba(0,0,0,0.55);
+    }
+    .theme-light {
+      --bg: #f0f0f5;
+      --surface: #e8e8ef;
+      --panel: #d8d8e0;
+      --elevated: #c8c8d0;
+      --border: #b0b0b8;
+      --text: #1a1a22;
+      --dim: #5a5a6a;
+      --shadow: 0 18px 50px rgba(0,0,0,0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      display: grid;
+      grid-template-rows: 36px 1fr 48px;
+      transition: background 0.3s, color 0.3s;
+    }
+    /* top bar */
+    .topbar {
+      background: rgba(11,11,17,0.95);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 12px;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+    .theme-light .topbar { background: rgba(232,232,239,0.95); }
+    .logo {
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+    }
+    .logo i {
+      width: 18px; height: 18px;
+      background: linear-gradient(135deg, var(--accent), #c084fc);
+      border-radius: 5px;
+      display: grid;
+      place-items: center;
+      font-style: normal;
+      font-size: 0.6rem;
+      font-weight: 800;
+    }
+    .top-title { flex: 1; text-align: center; font-size: 0.78rem; color: var(--dim); }
+    .top-right { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--dim); }
+    .badge {
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--elevated);
+      color: var(--green);
+      cursor: pointer;
+    }
+    .badge:hover { opacity: 0.8; }
+    .icon-btn {
+      background: none; border: none; color: var(--dim);
+      width: 28px; height: 28px; border-radius: 6px;
+      cursor: pointer; font-size: 0.9rem;
+      display: grid; place-items: center;
+      position: relative;
+    }
+    .icon-btn:hover { background: var(--elevated); color: var(--text); }
+    .icon-btn .notif-dot {
+      position: absolute; top: 2px; right: 2px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--red);
+      border: 1px solid var(--bg);
+    }
+    /* desktop */
+    .desktop {
+      position: relative; overflow: hidden;
+      background:
+        radial-gradient(ellipse at 12% 18%, rgba(139,124,255,0.07), transparent 42%),
+        radial-gradient(ellipse at 88% 82%, rgba(196,181,253,0.04), transparent 40%),
+        var(--bg);
+      transition: background 0.3s;
+    }
+    /* desktop widgets */
+    .widgets {
+      position: absolute; top: 14px; right: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .widget {
+      background: rgba(11,11,17,0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      min-width: 120px;
+      pointer-events: auto;
+      font-size: 0.72rem;
+      color: var(--dim);
+    }
+    .widget .val { color: var(--text); font-weight: 600; font-size: 0.85rem; }
+    .widget .label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .icons {
+      position: absolute; top: 14px; left: 10px;
+      display: flex; flex-direction: column; gap: 2px;
+      z-index: 5;
+    }
+    .desk-icon {
+      width: 74px; text-align: center; cursor: pointer;
+      padding: 9px 4px; border-radius: 10px;
+      font-size: 0.66rem; color: var(--dim);
+      transition: 0.15s;
+    }
+    .desk-icon:hover { background: rgba(255,255,255,0.06); color: var(--text); transform: scale(1.02); }
+    .desk-icon:active { background: rgba(139,124,255,0.16); transform: scale(0.95); }
+    .desk-icon b { display: block; font-size: 1.5rem; margin-bottom: 3px; font-weight: 400; }
+    /* windows */
+    .window {
+      position: absolute; background: var(--panel);
+      border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column;
+      min-width: 260px; min-height: 160px; overflow: hidden;
+      transition: border-color 0.15s;
+      backdrop-filter: blur(4px);
+    }
+    .window.focus { border-color: rgba(139,124,255,0.5); }
+    .wbar {
+      height: 34px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 10px; gap: 8px;
+      cursor: move; font-size: 0.8rem; font-weight: 500;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .wctrls { margin-left: auto; display: flex; gap: 6px; }
+    .wdot {
+      width: 11px; height: 11px; border-radius: 50%; border: none; cursor: pointer;
+      transition: 0.15s;
+    }
+    .wdot:hover { transform: scale(1.2); }
+    .wdot.x { background: var(--red); }
+    .wdot.m { background: var(--orange); }
+    .wdot.f { background: var(--green); }
+    .wbody { flex: 1; overflow: auto; position: relative; display: flex; flex-direction: column; }
+    .resizer { position: absolute; z-index: 10; }
+    .resizer.r { right: 0; top: 0; width: 6px; height: 100%; cursor: ew-resize; }
+    .resizer.b { bottom: 0; left: 0; width: 100%; height: 6px; cursor: ns-resize; }
+    .resizer.br { right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+    /* taskbar */
+    .taskbar {
+      background: rgba(11,11,17,0.97);
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 8px; gap: 4px; z-index: 90;
+      backdrop-filter: blur(8px);
+    }
+    .theme-light .taskbar { background: rgba(232,232,239,0.97); }
+    .start-btn {
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      border: none; color: #fff;
+      width: 34px; height: 30px; border-radius: 8px;
+      font-weight: 700; cursor: pointer; flex-shrink: 0;
+      transition: 0.15s;
+    }
+    .start-btn:hover { transform: scale(1.04); }
+    .pins { display: flex; gap: 2px; padding: 0 6px; border-right: 1px solid var(--border); margin-right: 4px; }
+    .pin {
+      width: 34px; height: 30px; border: none; background: transparent;
+      border-radius: 7px; cursor: pointer; font-size: 0.95rem;
+      display: grid; place-items: center;
+      transition: 0.15s;
+    }
+    .pin:hover { background: rgba(139,124,255,0.16); }
+    .tasks { display: flex; gap: 3px; flex: 1; overflow-x: auto; }
+    .task {
+      background: var(--elevated); border: 1px solid transparent;
+      color: var(--text); padding: 4px 10px; border-radius: 7px;
+      font-size: 0.72rem; cursor: pointer; white-space: nowrap;
+      transition: 0.15s;
+    }
+    .task:hover, .task.on { border-color: var(--border); background: rgba(139,124,255,0.12); }
+    .clock { font-size: 0.72rem; color: var(--dim); padding: 0 8px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    /* start menu */
+    .start-menu {
+      position: absolute; bottom: 54px; left: 8px;
+      width: 340px; background: rgba(18,18,25,0.96);
+      border: 1px solid var(--border); border-radius: 16px;
+      padding: 10px; display: none; z-index: 2000;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+    .start-menu.open { display: block; }
+    .start-menu-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 2px 2px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); margin-bottom: 8px;
+    }
+    .eyebrow { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dim); margin-bottom: 2px; }
+    .start-title { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .start-clock { font-size: 0.72rem; color: var(--accent2); background: rgba(139,124,255,0.12); border: 1px solid rgba(139,124,255,0.2); border-radius: 999px; padding: 4px 7px; font-variant-numeric: tabular-nums; }
+    .start-menu input { width: 100%; background: var(--elevated); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; color: var(--text); outline: none; font-size: 0.8rem; margin-bottom: 8px; }
+    .start-quick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+    .quick-item { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 9px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); color: var(--text); text-align: left; cursor: pointer; font-size: 0.72rem; transition: 0.15s; }
+    .quick-item:hover { background: rgba(139,124,255,0.09); border-color: rgba(139,124,255,0.32); }
+    .quick-item b { font-size: 1rem; }
+    .sgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; max-height: 300px; overflow-y: auto; }
+    .sitem { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 6px; border-radius: 9px; cursor: pointer; font-size: 0.72rem; color: var(--dim); text-align: center; transition: 0.15s; }
+    .sitem:hover { background: var(--elevated); color: var(--text); }
+    .sitem b { font-size: 1.3rem; font-weight: 400; }
+    /* context */
+    .ctx {
+      position: fixed; background: var(--panel);
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 5px; min-width: 170px; z-index: 2500;
+      display: none; box-shadow: var(--shadow);
+    }
+    .ctx.open { display: block; }
+    .ctx button {
+      display: block; width: 100%; text-align: left;
+      background: none; border: none; color: var(--text);
+      padding: 7px 11px; border-radius: 5px; font-size: 0.8rem; cursor: pointer;
+      transition: 0.1s;
+    }
+    .ctx button:hover { background: var(--elevated); }
+    /* notification center */
+    .notif-center {
+      position: fixed; top: 44px; right: 10px;
+      width: 320px; max-height: 400px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      z-index: 3000;
+      display: none;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+    .notif-center.open { display: block; }
+    .notif-center .head {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.8rem; font-weight: 600;
+    }
+    .notif-center .head button { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 0.7rem; }
+    .notif-center .head button:hover { color: var(--text); }
+    .notif-list { overflow-y: auto; max-height: 340px; padding: 6px; }
+    .notif-item {
+      padding: 8px 10px; border-radius: 8px; margin-bottom: 4px;
+      font-size: 0.78rem; border-left: 3px solid var(--accent);
+      background: var(--elevated);
+    }
+    .notif-item .time { font-size: 0.6rem; color: var(--dim); float: right; }
+    .notif-item.info { border-left-color: var(--accent); }
+    .notif-item.warn { border-left-color: var(--orange); }
+    .notif-item.error { border-left-color: var(--red); }
+    .notif-item.success { border-left-color: var(--green); }
+    .toast {
+      position: fixed; bottom: 58px; right: 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 9px; padding: 9px 13px;
+      font-size: 0.8rem; z-index: 3000;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+      animation: slideIn 0.2s ease;
+    }
+    @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    /* app styles */
+    .term { background: #08080e; color: #b5e0b5; font-family: var(--mono); font-size: 0.78rem; padding: 10px; height: calc(100% - 36px); overflow-y: auto; white-space: pre-wrap; }
+    .term-in { height: 36px; background: #08080e; border-top: 1px solid #1a1a24; display: flex; align-items: center; padding: 0 8px; gap: 6px; }
+    .term-in input { flex: 1; background: transparent; border: none; color: #b5e0b5; font-family: var(--mono); font-size: 0.78rem; outline: none; }
+    .editor { display: flex; flex-direction: column; height: 100%; }
+    .ebar { padding: 5px 8px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; align-items: center; }
+    .ebar .tabs { display: flex; gap: 3px; flex: 1; overflow-x: auto; }
+    .ebar .tab { padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; background: var(--elevated); border: 1px solid var(--border); white-space: nowrap; }
+    .ebar .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .editor textarea { flex: 1; width: 100%; background: #0a0a10; color: var(--text); border: none; padding: 10px; font-family: var(--mono); font-size: 0.8rem; resize: none; outline: none; line-height: 1.45; }
+    .estat { padding: 3px 8px; background: var(--surface); border-top: 1px solid var(--border); font-size: 0.68rem; color: var(--dim); display: flex; justify-content: space-between; flex-shrink: 0; }
+    .chat { display: flex; flex-direction: column; height: 100%; }
+    .msgs { flex: 1; overflow-y: auto; padding: 12px; }
+    .bubble { max-width: 88%; padding: 7px 11px; border-radius: 9px; margin-bottom: 8px; font-size: 0.82rem; line-height: 1.4; word-wrap: break-word; }
+    .bubble.user { background: rgba(139,124,255,0.18); margin-left: auto; }
+    .bubble.bot { background: var(--elevated); }
+    .chat-in { display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .chat-in input { flex: 1; background: var(--elevated); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; color: var(--text); outline: none; font-size: 0.82rem; }
+    .docs { display: flex; height: 100%; }
+    .dnav { width: 120px; background: var(--surface); border-right: 1px solid var(--border); padding: 6px 0; overflow-y: auto; flex-shrink: 0; }
+    .ditem { padding: 7px 10px; font-size: 0.78rem; cursor: pointer; color: var(--dim); }
+    .ditem:hover, .ditem.on { background: var(--elevated); color: var(--accent2); }
+    .dbody { flex: 1; padding: 14px 16px; overflow-y: auto; font-size: 0.85rem; line-height: 1.5; }
+    .dbody h2 { font-size: 1.05rem; margin-bottom: 6px; }
+    .dbody pre { background: #0a0a10; padding: 8px; border-radius: 7px; font-family: var(--mono); font-size: 0.75rem; margin: 6px 0; white-space: pre-wrap; overflow-x: auto; }
+    .dbody ul { margin: 4px 0 4px 16px; }
+    .list { padding: 10px; overflow-y: auto; }
+    .card { background: var(--elevated); border: 1px solid var(--border); border-radius: 9px; padding: 10px; margin-bottom: 6px; cursor: pointer; transition: 0.15s; }
+    .card:hover { border-color: var(--accent); transform: translateX(2px); }
+    .card h4 { font-size: 0.82rem; margin-bottom: 2px; }
+    .card p { font-size: 0.72rem; color: var(--dim); }
+    .files { padding: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; overflow-y: auto; }
+    .file { background: var(--elevated); border: 1px solid var(--border); border-radius: 9px; padding: 10px 4px; text-align: center; cursor: pointer; font-size: 0.7rem; transition: 0.15s; }
+    .file:hover { border-color: var(--accent); transform: scale(1.02); }
+    .notes { width: 100%; height: 100%; background: #0c0c12; border: none; color: var(--text); padding: 12px; font-size: 0.88rem; resize: none; outline: none; line-height: 1.45; }
+    .pad { padding: 14px; font-size: 0.88rem; line-height: 1.5; overflow-y: auto; }
+    .pad label { display: block; margin: 10px 0 3px; font-size: 0.75rem; color: var(--dim); }
+    .pad input, .pad select { width: 100%; background: var(--elevated); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; color: var(--text); outline: none; }
+    .pad textarea { width: 100%; background: var(--elevated); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; color: var(--text); outline: none; font-family: var(--mono); font-size: 0.78rem; resize: vertical; }
+    .mono-block { padding: 12px; font-family: var(--mono); font-size: 0.78rem; line-height: 1.55; white-space: pre-wrap; overflow-y: auto; }
+    .vhw { padding: 12px; display: grid; gap: 8px; overflow-y: auto; }
+    .vh { background: var(--elevated); border: 1px solid var(--border); border-radius: 9px; padding: 10px; }
+    .vh h4 { font-size: 0.75rem; color: var(--accent2); margin-bottom: 4px; }
+    .bar { height: 5px; background: #0a0a10; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.3s; }
+    .net { padding: 12px; font-size: 0.82rem; overflow-y: auto; }
+    .net h3 { font-size: 0.78rem; color: var(--accent2); margin: 10px 0 6px; display: flex; align-items: center; justify-content: space-between; }
+    .net h3:first-child { margin-top: 0; }
+    .nrow { display: flex; align-items: center; gap: 6px; padding: 7px 9px; background: var(--elevated); border: 1px solid var(--border); border-radius: 7px; margin-bottom: 4px; cursor: pointer; font-size: 0.8rem; transition: 0.15s; }
+    .nrow:hover { border-color: var(--accent); }
+    .nrow.on { border-color: var(--green); background: rgba(52,211,153,0.08); }
+    .nrow .r { margin-left: auto; font-size: 0.7rem; color: var(--dim); }
+    .meta { font-family: var(--mono); font-size: 0.7rem; color: var(--dim); margin: 4px 0 6px; line-height: 1.45; }
+    .row-btns { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+    .toggle {
+      width: 34px; height: 18px; border-radius: 9px;
+      background: var(--border); border: none; cursor: pointer;
+      position: relative; flex-shrink: 0;
+      transition: 0.15s;
+    }
+    .toggle.on { background: var(--green); }
+    .toggle::after {
+      content: ""; position: absolute;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #fff; top: 3px; left: 3px;
+      transition: left 0.12s;
+    }
+    .toggle.on::after { left: 19px; }
+    .pixel { padding: 10px; font-family: var(--mono); font-size: 0.75rem; overflow-y: auto; }
+    .pixel .pix-item { padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .pixel .pix-item .label { color: var(--dim); }
+    .pixel .pix-item .val { color: var(--accent2); }
+    .sysmon { padding: 10px; display: flex; flex-direction: column; height: 100%; }
+    .sysmon canvas { width: 100%; flex: 1; background: #0a0a10; border-radius: 6px; }
+    .sysmon .stats { display: flex; gap: 12px; padding: 6px 0; font-size: 0.75rem; color: var(--dim); flex-shrink: 0; flex-wrap: wrap; }
+    .sysmon .stats span { color: var(--text); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    .log-info { color: var(--accent2); }
+    .log-warn { color: var(--orange); }
+    .log-error { color: var(--red); }
+    .playground { display: flex; flex-direction: column; height: 100%; }
+    .playground .p-top { display: flex; gap: 6px; padding: 6px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; align-items: center; }
+    .playground .p-top select { background: var(--elevated); border: 1px solid var(--border); color: var(--text); padding: 3px 6px; border-radius: 4px; font-size: 0.75rem; }
+    .playground .p-body { flex: 1; display: flex; flex-direction: column; }
+    .playground .p-body textarea { flex: 1; width: 100%; background: #0a0a10; color: var(--text); border: none; padding: 10px; font-family: var(--mono); font-size: 0.8rem; resize: none; outline: none; line-height: 1.45; }
+    .playground .p-output { background: #0a0a10; border-top: 1px solid var(--border); padding: 8px; font-family: var(--mono); font-size: 0.75rem; white-space: pre-wrap; max-height: 150px; overflow-y: auto; }
+    /* auto dash */
+    .auto-dash { padding: 12px; display: flex; flex-direction: column; gap: 10px; height: 100%; overflow-y: auto; }
+    .auto-rule { background: var(--elevated); border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+    .auto-rule .header { display: flex; justify-content: space-between; align-items: center; }
+    .auto-rule .header .name { font-weight: 600; font-size: 0.85rem; }
+    .auto-rule .header .status { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; }
+    .auto-rule .header .status.on { background: var(--green); color: #000; }
+    .auto-rule .header .status.off { background: var(--dim); color: #000; }
+    .auto-rule .details { font-size: 0.72rem; color: var(--dim); display: flex; gap: 12px; flex-wrap: wrap; }
+    .auto-rule .actions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .auto-form { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .auto-form .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .auto-form .row > * { flex: 1; min-width: 120px; }
+    .auto-logs { font-family: var(--mono); font-size: 0.7rem; padding: 8px; max-height: 150px; overflow-y: auto; background: #0a0a10; border-radius: 6px; }
+    .auto-logs .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .auto-logs .log-entry .time { color: var(--dim); }
+    .auto-logs .log-entry .ok { color: var(--green); }
+    .auto-logs .log-entry .err { color: var(--red); }
+    /* file search */
+    .file-search { display: flex; gap: 6px; padding: 4px 8px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .file-search input { flex: 1; background: var(--elevated); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; color: var(--text); outline: none; font-size: 0.75rem; }
+    .file-search .results { font-size: 0.65rem; color: var(--dim); margin-left: auto; align-self: center; }
+    /* keyboard shortcut hint */
+    .shortcut-hint { position: fixed; bottom: 52px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 4px 12px; font-size: 0.65rem; color: var(--dim); z-index: 80; opacity: 0.6; pointer-events: none; display: none; }
+    .shortcut-hint.show { display: block; }
+    /* responsive */
+    @media (max-width: 768px) {
+      .top-title { font-size: 0.6rem; }
+      .top-right .badge { display: none; }
+      .start-menu { width: 90%; left: 5%; }
+      .window { min-width: 200px; }
+      .widgets { display: none; }
+      .icons .desk-icon { width: 56px; font-size: 0.55rem; }
+      .desk-icon b { font-size: 1.1rem; }
+    }
+    @media (max-width: 500px) {
+      .pins { display: none; }
+      .top-right .icon-btn { font-size: 0.7rem; width: 22px; height: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo" onclick="A.toggleStart()"><i>Æ</i> Æther</div>
+  <div class="top-title" id="title">Desktop</div>
+  <div class="top-right">
+    <span class="badge" id="netbadge" title="Network status">⋯</span>
+    <span class="badge" id="bluetooth-badge" title="Bluetooth">🔴 BT</span>
+    <button class="icon-btn" onclick="A.open('network')" title="Network">📡</button>
+    <button class="icon-btn" onclick="A.open('bluetooth')" title="Bluetooth">🔷</button>
+    <button class="icon-btn" onclick="A.open('automation')" title="Automation">🤖</button>
+    <button class="icon-btn" onclick="A.open('settings')" title="Settings">⚙</button>
+    <button class="icon-btn" onclick="A.open('sys')" title="System">◔</button>
+    <button class="icon-btn" id="notifBtn" onclick="A.toggleNotif()" title="Notifications">🔔<span class="notif-dot" id="notifDot" style="display:none"></span></button>
+    <span id="tclock"></span>
+  </div>
+</div>
+
+<div class="desktop" id="desktop">
+  <div class="widgets" id="widgets">
+    <div class="widget"><div class="label">Time</div><div class="val" id="widgetTime">--:--:--</div></div>
+    <div class="widget"><div class="label">CPU</div><div class="val" id="widgetCPU">0%</div></div>
+    <div class="widget"><div class="label">RAM</div><div class="val" id="widgetRAM">0%</div></div>
+  </div>
+  <div class="icons" id="icons"></div>
+</div>
+
+<div class="start-menu" id="start">
+  <div class="start-menu-header">
+    <div><div class="eyebrow">Desktop</div><div class="start-title" id="startGreeting">System ready</div></div>
+    <div class="start-clock" id="start-clock">--:--</div>
+  </div>
+  <input id="sfilter" placeholder="Search apps…" autocomplete="off">
+  <div class="start-quick" id="start-quick"></div>
+  <div class="sgrid" id="sgrid"></div>
+</div>
+
+<div class="ctx" id="ctx">
+  <button data-a="refresh">Refresh</button>
+  <button data-a="mount">Mount Folder</button>
+  <button data-a="bluetooth">Bluetooth</button>
+  <button data-a="network">Network</button>
+  <button data-a="automation">Automation</button>
+  <button data-a="settings">Settings</button>
+  <button data-a="sys">System</button>
+  <button data-a="about">About</button>
+  <button data-a="theme">Toggle Theme</button>
+</div>
+
+<div class="notif-center" id="notifCenter">
+  <div class="head">
+    <span>🔔 Notifications</span>
+    <button onclick="A.clearNotifs()">Clear all</button>
+  </div>
+  <div class="notif-list" id="notifList"></div>
+</div>
+
+<div class="shortcut-hint" id="shortcutHint">⌘+T Terminal · ⌘+N Notes · ⌘+Space Start · Alt+Tab Switch</div>
+
+<div class="taskbar">
+  <button class="start-btn" onclick="A.toggleStart()">Æ</button>
+  <div class="pins" id="pins"></div>
+  <div class="tasks" id="tasks"></div>
+  <div class="clock" id="bclock"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ===================================================================
+//  GLOBAL STATE
+// ===================================================================
+const S = {
+  wins: new Map(),
+  z: 10,
+  id: 1,
+  fs: new Map(),
+  knowledge: [],
+  notes: "",
+  pixel: new Map(),
+  vhw: {
+    vCPU: 12, vGPU: 18, vTPU: 11, vNPU: 9, vQPU: 4, vPPU: 7, vLPU: 6,
+    vRAM: 40, vVRAM: 22, vCache: 15, vStorage: 28,
+    vNet: 8, vPhoton: 7, vFabric: 10, vBus: 5,
+    vReason: 14, vMemory: 20, vAttention: 16, vPlan: 11, vLearn: 9, vReflect: 8,
+    vEncoder: 6, vDecoder: 6, vScheduler: 5, vSecurity: 3, vThermals: 25,
+    computeLoad: 0, mindLoad: 0, fabricHealth: 100, powerDraw: 0
+  },
+  vhwLog: [],
+  brain: {
+    active: true, mode: 'awake', thoughts: [], goals: [], beliefs: [],
+    episodes: [], focus: null, cycles: 0,
+    vhw: { reason: 10, memory: 12, attention: 10, plan: 8, learn: 6, reflect: 5, load: 0 }
+  },
+  heart: {
+    active: true, beat: 0, tempo: 60, energy: 80,
+    languageRuns: 0, lastSrc: null, lastMs: 0, errors: 0,
+    vhw: { pulse: 10, runtime: 8, gate: 12, bus: 7, energy: 80, load: 0 }
+  },
+  oracle: { queries: 0, predictions: [], knowledge: [], lastAnswer: null },
+  hardware: {
+    cpu: { cores: navigator.hardwareConcurrency || 4, load: 0, temp: 35 },
+    ram: { total: 8, used: 0, free: 0 },
+    storage: { total: 128, used: 0, free: 0 },
+    battery: { charging: false, level: 100 },
+    sensors: { temperature: 32, fanSpeed: 0 }
+  },
+  net: {
+    wifi: true, ssid: 'Æther-Link', signal: 90, ip: '192.168.1.100',
+    mac: 'AA:BB:CC:DD:EE:FF', dns: '8.8.8.8', rtt: 20,
+    bt: false, devices: [],
+    hotspot: false, hsName: 'Æther-HS',
+    link: { mode: 'light-speed', ms: 0.08, mbps: 960 },
+    wifiList: [], bandwidthHistory: []
+  },
+  settings: { label: 'Online', theme: 'dark' },
+  boot: Date.now(),
+  logs: [],
+  processes: [
+    { pid: 1, name: 'kernel', cpu: 0.2, mem: 12 },
+    { pid: 2, name: 'init', cpu: 0.0, mem: 4 }
+  ],
+  modules: ['fs', 'net', 'usb', 'gpu', 'sound'],
+  disk: { partitions: [
+    { mount: '/system', total: 20, used: 8, free: 12, format: 'ext4' },
+    { mount: '/user', total: 80, used: 42, free: 38, format: 'ext4' },
+    { mount: '/data', total: 28, used: 5, free: 23, format: 'apfs' }
+  ]},
+  bluetooth: { device: null, services: [], characteristics: [], discovered: [], scanning: false },
+  mountedFolder: null,
+  automations: [],
+  automationLogs: [],
+  notifications: [],
+  notifId: 0,
+  users: [{ name: 'admin', active: true }, { name: 'guest', active: false }],
+  theme: 'dark'
+};
+
+// ===================================================================
+//  EVENT BUS
+// ===================================================================
+const EventBus = {
+  listeners: new Map(),
+  emit(name, data) {
+    const list = this.listeners.get(name) || [];
+    list.forEach(fn => fn(data));
+    triggerAutomationEvent(name, data);
+  },
+  on(name, fn) {
+    if (!this.listeners.has(name)) this.listeners.set(name, []);
+    this.listeners.get(name).push(fn);
+  },
+  off(name, fn) {
+    const list = this.listeners.get(name);
+    if (list) { const idx = list.indexOf(fn); if (idx > -1) list.splice(idx, 1); }
+  }
+};
+window.EventBus = EventBus;
+
+// ===================================================================
+//  NOTIFICATION SYSTEM
+// ===================================================================
+function addNotification(msg, type = 'info', title = '') {
+  const id = ++S.notifId;
+  S.notifications.push({ id, msg, type, title, time: Date.now() });
+  if (S.notifications.length > 50) S.notifications.shift();
+  renderNotifs();
+  document.getElementById('notifDot').style.display = 'block';
+  // toast for immediate visibility
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = (title ? title + ': ' : '') + msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
+  return id;
+}
+
+function renderNotifs() {
+  const list = document.getElementById('notifList');
+  list.innerHTML = S.notifications.slice().reverse().map(n => `
+    <div class="notif-item ${n.type}">
+      ${n.title ? '<strong>' + n.title + '</strong> ' : ''}${n.msg}
+      <span class="time">${new Date(n.time).toLocaleTimeString()}</span>
+    </div>
+  `).join('');
+  document.getElementById('notifDot').style.display = S.notifications.length ? 'block' : 'none';
+}
+
+function toggleNotif() {
+  document.getElementById('notifCenter').classList.toggle('open');
+}
+
+function clearNotifs() {
+  S.notifications = [];
+  renderNotifs();
+  document.getElementById('notifDot').style.display = 'none';
+  document.getElementById('notifCenter').classList.remove('open');
+}
+
+window.A = { toggleNotif, clearNotifs };
+
+// ===================================================================
+//  LOGGING
+// ===================================================================
+function log(msg, level='INFO') {
+  S.logs.push({ time: Date.now(), level, msg });
+  if (S.logs.length > 200) S.logs.shift();
+  EventBus.emit('system:log', { msg, level });
+}
+log('System boot', 'INFO');
+
+// ===================================================================
+//  HARDWARE MONITORING
+// ===================================================================
+async function updateHardware() {
+  S.hardware.cpu.load = Math.min(100, Math.max(0, S.hardware.cpu.load + (Math.random()-0.5)*6));
+  S.hardware.cpu.temp = 30 + S.hardware.cpu.load * 0.25 + Math.random()*2;
+  if (performance.memory) {
+    const mem = performance.memory;
+    S.hardware.ram.used = mem.usedJSHeapSize / (1024**3);
+    S.hardware.ram.total = mem.jsHeapSizeLimit / (1024**3);
+    S.hardware.ram.free = S.hardware.ram.total - S.hardware.ram.used;
+  } else {
+    S.hardware.ram.used = Math.min(S.hardware.ram.total, Math.max(0, S.hardware.ram.used + (Math.random()-0.5)*0.2));
+    S.hardware.ram.free = S.hardware.ram.total - S.hardware.ram.used;
+  }
+  try {
+    const battery = await navigator.getBattery();
+    S.hardware.battery.level = battery.level * 100;
+    S.hardware.battery.charging = battery.charging;
+  } catch(e) {}
+  try {
+    const estimate = await navigator.storage.estimate();
+    S.hardware.storage.total = estimate.quota / (1024**3);
+    S.hardware.storage.used = estimate.usage / (1024**3);
+    S.hardware.storage.free = S.hardware.storage.total - S.hardware.storage.used;
+  } catch(e) {}
+  if (navigator.connection) {
+    const conn = navigator.connection;
+    S.net.signal = conn.downlink ? Math.min(100, conn.downlink * 10) : 70;
+    S.net.rtt = conn.rtt || 20;
+    S.net.bandwidthHistory.push({ time: Date.now(), downlink: conn.downlink || 10, rtt: conn.rtt || 20 });
+    if (S.net.bandwidthHistory.length > 60) S.net.bandwidthHistory.shift();
+  }
+  Object.keys(S.vhw).forEach(k => {
+    S.vhw[k] = Math.min(95, Math.max(5, S.vhw[k] + (Math.random()-0.5)*4));
+  });
+  S.processes.forEach(p => {
+    p.cpu = Math.min(100, Math.max(0, p.cpu + (Math.random()-0.5)*2));
+    p.mem = Math.min(256, Math.max(2, p.mem + (Math.random()-0.5)*0.5));
+  });
+  // widgets
+  document.getElementById('widgetCPU').textContent = Math.round(S.hardware.cpu.load) + '%';
+  document.getElementById('widgetRAM').textContent = Math.round((S.hardware.ram.used / S.hardware.ram.total) * 100) + '%';
+  updateBadge();
+  updateBTBadge();
+  checkScheduledAutomations();
+}
+setInterval(updateHardware, 2000);
+updateHardware();
+
+// clock widget
+function updateWidgetClock() {
+  const now = new Date();
+  document.getElementById('widgetTime').textContent = now.toLocaleTimeString();
+}
+setInterval(updateWidgetClock, 1000);
+updateWidgetClock();
+
+// ===================================================================
+//  NETWORK HELPERS
+// ===================================================================
+function netScan() {
+  S.net.signal = 72 + (Math.random() * 26 | 0);
+  S.net.link.ms = +(0.04 + Math.random() * 0.14).toFixed(2);
+  S.net.link.mbps = 820 + (Math.random() * 160 | 0);
+  const WIFI = ['Æther-Link', 'Campus-5G', 'Mesh-Core', 'Lab-Net', 'Guest-Open'];
+  let list = WIFI.slice().sort(() => Math.random()-0.5).slice(0,4);
+  if (S.net.wifi && list.indexOf(S.net.ssid)<0) list.unshift(S.net.ssid);
+  S.net.wifiList = list;
+  const BT = ['Æ-Buds', 'Key-Logic', 'Sensor-01', 'Display-Link'];
+  S.net.devices = BT.slice().sort(() => Math.random()-0.5).slice(0,3);
+  log('Network scan completed', 'INFO');
+  updateBadge();
+  EventBus.emit('network:scan', { signal: S.net.signal, ssid: S.net.ssid });
+}
+
+function updateBadge() {
+  const el = document.getElementById('netbadge');
+  if (!el) return;
+  if (S.net.wifi) {
+    el.textContent = 'Wi‑Fi ' + S.net.signal + '%';
+    el.style.color = 'var(--green)';
+  } else if (S.net.hotspot) {
+    el.textContent = 'Hotspot';
+    el.style.color = 'var(--orange)';
+  } else if (S.net.bt) {
+    el.textContent = 'BT';
+    el.style.color = 'var(--accent2)';
+  } else {
+    el.textContent = 'Offline';
+    el.style.color = 'var(--dim)';
+  }
+}
+function updateBTBadge() {
+  const el = document.getElementById('bluetooth-badge');
+  if (!el) return;
+  if (S.bluetooth.device) {
+    el.textContent = '🔵 ' + (S.bluetooth.device.name || 'Connected');
+    el.style.color = 'var(--green)';
+  } else {
+    el.textContent = '🔴 BT';
+    el.style.color = 'var(--dim)';
+  }
+}
+
+// ===================================================================
+//  VFS – File System
+// ===================================================================
+async function mountRealFolder() {
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const name = dirHandle.name;
+    const mount = { name, type: 'folder', handle: dirHandle, rootPath: '/' + name, entries: new Map() };
+    S.mounts = S.mounts || [];
+    S.mounts.push(mount);
+    log(`Mounted folder: ${name}`, 'INFO');
+    toast(`Mounted ${name}`);
+    EventBus.emit('folder:mounted', { name });
+    if (window._refreshFiles) window._refreshFiles();
+    return mount;
+  } catch (e) {
+    if (e.name !== 'AbortError') { log('Mount failed: '+e.message, 'ERROR'); toast('Mount failed: '+e.message); }
+  }
+}
+
+function resolvePath(path) {
+  S.mounts = S.mounts || [];
+  if (path.startsWith('/')) {
+    for (const mount of S.mounts) {
+      if (path === mount.rootPath || path.startsWith(mount.rootPath + '/')) {
+        const rel = path.slice(mount.rootPath.length);
+        return { mount, rel: rel || '/' };
+      }
+    }
+    return { mount: null, rel: path };
+  } else { return { mount: null, rel: path }; }
+}
+
+async function vfsRead(path) {
+  const { mount, rel } = resolvePath(path);
+  if (mount && mount.type === 'folder') {
+    try {
+      const parts = rel.split('/').filter(Boolean);
+      let current = mount.handle;
+      for (let i=0; i<parts.length-1; i++) current = await current.getDirectoryHandle(parts[i]);
+      const fileHandle = await current.getFileHandle(parts[parts.length-1]);
+      const file = await fileHandle.getFile();
+      return await file.text();
+    } catch (e) { return null; }
+  } else {
+    const entry = S.fs.get(path);
+    return entry ? entry.content : null;
+  }
+}
+
+async function vfsWrite(path, content) {
+  const { mount, rel } = resolvePath(path);
+  if (mount && mount.type === 'folder') {
+    try {
+      const parts = rel.split('/').filter(Boolean);
+      let current = mount.handle;
+      for (let i=0; i<parts.length-1; i++) current = await current.getDirectoryHandle(parts[i], { create: true });
+      const fileHandle = await current.getFileHandle(parts[parts.length-1], { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      log(`Written to real folder: ${path}`, 'INFO');
+      EventBus.emit('file:changed', { path, content });
+      return true;
+    } catch (e) { log(`Write failed: ${e.message}`, 'ERROR'); return false; }
+  } else {
+    S.fs.set(path, { content, size: content.length, perms: 'rw-', mtime: Date.now() });
+    saveState();
+    EventBus.emit('file:changed', { path, content });
+    return true;
+  }
+}
+
+function searchFiles(query) {
+  const q = String(query || '').toLowerCase().trim();
+  if (!q) return [];
+  const results = [];
+  for (const [path, entry] of S.fs) {
+    if (path.toLowerCase().includes(q) || (entry.content && entry.content.toLowerCase().includes(q))) {
+      results.push({ path, preview: (entry.content || '').slice(0, 80), size: entry.size });
+    }
+  }
+  return results;
+}
+window.searchFiles = searchFiles;
+
+// ===================================================================
+//  BLUETOOTH
+// ===================================================================
+async function scanBluetooth() {
+  if (!navigator.bluetooth) { toast('Bluetooth not supported'); return; }
+  try {
+    S.bluetooth.scanning = true;
+    const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: ['generic_access']
+    });
+    S.bluetooth.device = device;
+    S.bluetooth.discovered.push(device);
+    log(`Bluetooth device: ${device.name || 'unknown'}`, 'INFO');
+    toast(`Connected to ${device.name || 'device'}`);
+    updateBTBadge();
+    EventBus.emit('bluetooth:connected', { name: device.name, id: device.id });
+    try {
+      const server = await device.gatt.connect();
+      const services = await server.getPrimaryServices();
+      S.bluetooth.services = services;
+    } catch(e) {}
+  } catch (e) {
+    if (e.name !== 'NotFoundError') { log('Bluetooth error: '+e.message, 'ERROR'); toast('Bluetooth error: '+e.message); }
+  }
+  S.bluetooth.scanning = false;
+}
+
+// ===================================================================
+//  PERSISTENCE
+// ===================================================================
+function saveState() {
+  try {
+    localStorage.setItem('aether-ultimate-v2', JSON.stringify({
+      fs: Array.from(S.fs.entries()),
+      knowledge: S.knowledge,
+      notes: S.notes,
+      pixel: Array.from(S.pixel.entries()),
+      net: S.net,
+      settings: S.settings,
+      processes: S.processes,
+      modules: S.modules,
+      disk: S.disk,
+      vhw: S.vhw,
+      logs: S.logs.slice(-50),
+      automations: S.automations,
+      automationLogs: S.automationLogs.slice(-100),
+      notifications: S.notifications.slice(-30),
+      theme: S.theme
+    }));
+  } catch(e) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem('aether-ultimate-v2');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.fs) S.fs = new Map(d.fs);
+    if (d.knowledge) S.knowledge = d.knowledge;
+    if (typeof d.notes === 'string') S.notes = d.notes;
+    if (d.pixel) S.pixel = new Map(d.pixel);
+    if (d.net) S.net = d.net;
+    if (d.settings) S.settings = d.settings;
+    if (d.processes) S.processes = d.processes;
+    if (d.modules) S.modules = d.modules;
+    if (d.disk) S.disk = d.disk;
+    if (d.vhw) S.vhw = d.vhw;
+    if (d.logs) S.logs = d.logs;
+    if (d.automations) S.automations = d.automations;
+    if (d.automationLogs) S.automationLogs = d.automationLogs;
+    if (d.notifications) S.notifications = d.notifications;
+    if (d.theme) S.theme = d.theme;
+  } catch(e) {}
+}
+function seed() {
+  if (S.fs.size === 0) {
+    const def = {
+      '/readme.txt': 'Æther OS Ultimate · Automation, real folders, Bluetooth, VHW, Pixels.',
+      '/hello.js': 'return "Hello from Æther";',
+      '/fib.js': 'function fib(n){return n<2?n:fib(n-1)+fib(n-2);}\nreturn "fib(10) = "+fib(10);',
+      '/omega/hello.ae': 'let name = "Æther"\nfn greet(w) { return "Hello, " + w }\nprint(greet(name))',
+      '/net/profile.json': '{"ssid":"Æther-Link","mode":"light-speed"}'
+    };
+    Object.entries(def).forEach(([path, content]) => {
+      S.fs.set(path, { content, size: content.length, perms: 'rw-', mtime: Date.now() });
+    });
+  }
+  if (!S.knowledge.length) {
+    S.knowledge = [
+      { topic: 'aether', fact: 'Ultimate OS with Automation Engine, real folders, Bluetooth, and more.' },
+      { topic: 'automation', fact: 'Automation Engine: triggers, actions, scheduler, event bus, scripts.' },
+      { topic: 'bluetooth', fact: 'Web Bluetooth API for real device discovery and connection.' },
+      { topic: 'folder', fact: 'Mount any folder from your computer using File System Access API.' }
+    ];
+  }
+  if (!S.pixel.size) S.pixel.set('px1', { type: 'app', label: 'Hello', data: 'Desktop' });
+  if (!S.automations || !S.automations.length) {
+    S.automations = [
+      {
+        id: 'auto1',
+        name: 'Welcome Toast',
+        enabled: true,
+        trigger: { type: 'startup' },
+        action: { type: 'sendToast', params: { message: 'Welcome to Æther OS Ultimate!' } },
+        lastRun: null, nextRun: null, schedule: null, createdAt: Date.now()
+      },
+      {
+        id: 'auto2',
+        name: 'Daily Note',
+        enabled: true,
+        trigger: { type: 'time', params: { hour: 9, minute: 0 } },
+        action: { type: 'runScript', params: { script: `// Daily note\nconst date = new Date().toLocaleDateString();\nvfsWrite('/daily-'+date+'.txt', 'Log for '+date);\ntoast('Daily note created');` } },
+        lastRun: null, nextRun: null,
+        schedule: { type: 'daily', hour: 9, minute: 0 },
+        createdAt: Date.now()
+      }
+    ];
+  }
+}
+loadState();
+seed();
+saveState();
+
+// ===================================================================
+//  WINDOW MANAGER
+// ===================================================================
+let drag = null;
+
+function createWin(app, title, w, h, html) {
+  const id = app + '-' + (S.id++);
+  const el = document.createElement('div');
+  el.className = 'window focus';
+  el.dataset.id = id;
+  el.dataset.app = app;
+  el.style.cssText = `width:${w}px;height:${h}px;left:${45+Math.random()*50}px;top:${32+Math.random()*28}px;z-index:${++S.z}`;
+  el.innerHTML = `
+    <div class="wbar"><span>${title}</span><div class="wctrls">
+      <button class="wdot m" title="Min"></button>
+      <button class="wdot f" title="Max"></button>
+      <button class="wdot x" title="Close"></button>
+    </div></div>
+    <div class="wbody">${html}</div>
+  `;
+  const bar = el.querySelector('.wbar');
+  bar.onmousedown = (e) => {
+    if (e.target.classList.contains('wdot')) return;
+    drag = { el, ox: e.clientX - el.offsetLeft, oy: e.clientY - el.offsetTop };
+    focus(id);
+  };
+  bar.ondblclick = () => el.querySelector('.f').click();
+  el.querySelector('.x').onclick = () => close(id);
+  el.querySelector('.m').onclick = () => { el.style.display = 'none'; tasks(); };
+  el.querySelector('.f').onclick = () => {
+    if (el.dataset.max) {
+      el.style.left = el.dataset.lx + 'px';
+      el.style.top = el.dataset.ly + 'px';
+      el.style.width = el.dataset.lw + 'px';
+      el.style.height = el.dataset.lh + 'px';
+      delete el.dataset.max;
+    } else {
+      el.dataset.lx = el.offsetLeft;
+      el.dataset.ly = el.offsetTop;
+      el.dataset.lw = el.offsetWidth;
+      el.dataset.lh = el.offsetHeight;
+      el.style.left = el.style.top = '0';
+      el.style.width = el.style.height = '100%';
+      el.dataset.max = '1';
+    }
+  };
+  el.onmousedown = () => focus(id);
+  ['r','b','br'].forEach(dir => {
+    const res = document.createElement('div');
+    res.className = 'resizer ' + dir;
+    res.onmousedown = (e) => {
+      e.stopPropagation();
+      const startX = e.clientX, startY = e.clientY;
+      const startW = el.offsetWidth, startH = el.offsetHeight;
+      const onMove = (ev) => {
+        if (dir.includes('r')) el.style.width = Math.max(200, startW + ev.clientX - startX) + 'px';
+        if (dir.includes('b')) el.style.height = Math.max(150, startH + ev.clientY - startY) + 'px';
+      };
+      const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    };
+    el.appendChild(res);
+  });
+  document.getElementById('desktop').appendChild(el);
+  S.wins.set(id, el);
+  focus(id);
+  tasks();
+  document.getElementById('title').textContent = title;
+  log(`Window opened: ${title}`, 'INFO');
+  EventBus.emit('app:opened', { app, title, id });
+  addNotification(`Opened ${title}`, 'info', 'Window');
+  return { id, el };
+}
+
+function focus(id) {
+  S.wins.forEach((w, k) => {
+    w.classList.toggle('focus', k === id);
+    if (k === id) {
+      w.style.display = 'flex';
+      w.style.zIndex = ++S.z;
+      const t = w.querySelector('.wbar span');
+      if (t) document.getElementById('title').textContent = t.textContent;
+    }
+  });
+  tasks();
+}
+function close(id) {
+  const w = S.wins.get(id);
+  if (!w) return;
+  const title = w.querySelector('.wbar span').textContent;
+  const app = w.dataset.app;
+  w.remove();
+  S.wins.delete(id);
+  tasks();
+  if (!S.wins.size) document.getElementById('title').textContent = 'Desktop';
+  log(`Window closed: ${title}`, 'INFO');
+  EventBus.emit('app:closed', { app, title, id });
+}
+
+document.onmousemove = (e) => {
+  if (!drag) return;
+  drag.el.style.left = Math.max(0, e.clientX - drag.ox) + 'px';
+  drag.el.style.top = Math.max(0, e.clientY - drag.oy) + 'px';
+};
+document.onmouseup = () => { drag = null; };
+
+function tasks() {
+  const bar = document.getElementById('tasks');
+  bar.innerHTML = '';
+  const seen = {};
+  S.wins.forEach((w, id) => {
+    const app = w.dataset.app;
+    if (seen[app]) return;
+    seen[app] = true;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'task' + (w.style.display !== 'none' ? ' on' : '');
+    b.textContent = w.querySelector('.wbar span').textContent;
+    b.onclick = () => {
+      if (w.style.display === 'none') w.style.display = 'flex';
+      focus(id);
+    };
+    bar.appendChild(b);
+  });
+}
+
+// ===================================================================
+//  UI HELPERS
+// ===================================================================
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+
+function updateClock() {
+  const now = new Date();
+  const label = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const top = document.getElementById('tclock');
+  const bottom = document.getElementById('bclock');
+  const start = document.getElementById('start-clock');
+  if (top) top.textContent = label;
+  if (bottom) bottom.textContent = label;
+  if (start) start.textContent = label;
+  updateStartMeta();
+}
+
+function updateStartMeta() {
+  const el = document.querySelector('.start-title');
+  if (!el) return;
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  el.textContent = `${greeting} · ${S.automations.length} automations`;
+}
+
+function focusNextWindow() {
+  const openWins = [...S.wins.values()].filter(w => w.style.display !== 'none');
+  if (!openWins.length) return;
+  const active = document.querySelector('.window.focus');
+  const currentIndex = openWins.indexOf(active);
+  const next = openWins[(currentIndex + 1) % openWins.length] || openWins[0];
+  if (next && next.dataset.id) focus(Number(next.dataset.id));
+}
+
+function toggleStart() {
+  const m = document.getElementById('start');
+  m.classList.toggle('open');
+  if (m.classList.contains('open')) {
+    buildStart('');
+    document.getElementById('sfilter').value = '';
+    document.getElementById('sfilter').focus();
+  }
+}
+document.getElementById('sfilter').oninput = (e) => buildStart(e.target.value);
+
+document.onclick = (e) => {
+  const start = document.getElementById('start');
+  const ctx = document.getElementById('ctx');
+  if (!start.contains(e.target) && !e.target.classList.contains('start-btn') && !e.target.closest('.logo')) start.classList.remove('open');
+  if (!ctx.contains(e.target)) ctx.classList.remove('open');
+};
+document.onkeydown = (e) => {
+  const target = e.target;
+  const isTextInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+  if ((e.ctrlKey || e.metaKey) && e.key === ' ') {
+    e.preventDefault(); toggleStart(); return;
+  }
+  if ((e.altKey || e.metaKey) && e.key === 'Tab') {
+    e.preventDefault(); focusNextWindow(); return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 't') {
+    e.preventDefault(); open('terminal'); return;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
+    e.preventDefault(); open('notes'); return;
+  }
+  if (e.key === 'Escape') {
+    document.getElementById('start').classList.remove('open');
+    document.getElementById('ctx').classList.remove('open');
+    document.getElementById('notifCenter').classList.remove('open');
+  }
+  if (isTextInput) return;
+  if (e.key.toLowerCase() === 't') open('terminal');
+  if (e.key.toLowerCase() === 'n') open('notes');
+};
+
+setInterval(updateClock, 1000);
+updateClock();
+
+document.getElementById('desktop').oncontextmenu = (e) => {
+  if (e.target.closest('.window') || e.target.closest('.desk-icon')) return;
+  e.preventDefault();
+  const ctx = document.getElementById('ctx');
+  ctx.style.left = e.clientX + 'px';
+  ctx.style.top = e.clientY + 'px';
+  ctx.classList.add('open');
+};
+document.getElementById('ctx').onclick = (e) => {
+  const a = e.target.getAttribute('data-a');
+  if (!a) return;
+  document.getElementById('ctx').classList.remove('open');
+  if (a === 'refresh') { buildIcons(); toast('Refreshed'); }
+  else if (a === 'mount') { mountRealFolder(); }
+  else if (a === 'theme') { toggleTheme(); }
+  else open(a);
+};
+
+// ===================================================================
+//  THEME SWITCHER
+// ===================================================================
+function toggleTheme() {
+  S.theme = S.theme === 'dark' ? 'light' : 'dark';
+  document.body.classList.toggle('theme-light', S.theme === 'light');
+  saveState();
+  toast('Theme: ' + S.theme);
+}
+
+// ===================================================================
+//  APP LAUNCHER & ICONS
+// ===================================================================
+const APPS = [
+  { id: 'docs', name: 'Docs', icon: '📖', pin: true },
+  { id: 'examples', name: 'Examples', icon: '🧪', pin: true },
+  { id: 'terminal', name: 'Terminal', icon: '⬛', pin: true },
+  { id: 'editor', name: 'Editor', icon: '📝', pin: true },
+  { id: 'playground', name: 'Playground', icon: '⚡', pin: true },
+  { id: 'chat', name: 'Aether ASI', icon: '🧠', pin: true },
+  { id: 'images', name: 'Images', icon: '🖼️', pin: true },
+  { id: 'audio', name: 'Audio Lab', icon: '🔊', pin: true },
+  { id: 'appbuilder', name: 'App Builder', icon: '📦', pin: true },
+  { id: 'automation', name: 'Automation', icon: '🤖', pin: true },
+  { id: '3d', name: '3D Viewer', icon: '🎮', pin: true },
+  { id: 'video', name: 'Video', icon: '🎬', pin: false },
+  { id: 'network', name: 'Network', icon: '📡', pin: true },
+  { id: 'bluetooth', name: 'Bluetooth', icon: '🔷', pin: true },
+  { id: 'files', name: 'HyperFS', icon: '📁', pin: false },
+  { id: 'notes', name: 'Notes', icon: '📋', pin: false },
+  { id: 'pixels', name: 'Pixels', icon: '🧬', pin: false },
+  { id: 'vhw', name: 'VHW Oracle', icon: '🔮', pin: true },
+  { id: 'sysmon', name: 'System Monitor', icon: '📈', pin: false },
+  { id: 'diskutil', name: 'Disk Utility', icon: '💾', pin: false },
+  { id: 'taskmgr', name: 'Task Manager', icon: '🔧', pin: false },
+  { id: 'logs', name: 'System Log', icon: '📋', pin: false },
+  { id: 'modules', name: 'Kernel Modules', icon: '🧩', pin: false },
+  { id: 'settings', name: 'Settings', icon: '⚙️', pin: false },
+  { id: 'sys', name: 'System', icon: '📊', pin: false },
+  { id: 'about', name: 'About', icon: 'ℹ️', pin: false },
+  { id: 'notifications', name: 'Notifications', icon: '🔔', pin: false }
+];
+
+function buildIcons() {
+  const box = document.getElementById('icons');
+  box.innerHTML = '';
+  APPS.forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'desk-icon';
+    d.innerHTML = `<b>${a.icon}</b>${a.name}`;
+    d.onclick = () => open(a.id);
+    box.appendChild(d);
+  });
+}
+function buildStart(q) {
+  const g = document.getElementById('sgrid');
+  const quick = document.getElementById('start-quick');
+  g.innerHTML = '';
+  quick.innerHTML = '';
+  q = (q || '').toLowerCase();
+  const quickItems = ['terminal', 'editor', 'chat', 'automation'];
+  quickItems.forEach(id => {
+    const app = APPS.find(a => a.id === id);
+    if (!app) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'quick-item';
+    btn.innerHTML = `<b>${app.icon}</b><span>${app.name}</span>`;
+    btn.onclick = () => { open(app.id); toggleStart(); };
+    quick.appendChild(btn);
+  });
+  APPS.filter(a => !q || a.name.toLowerCase().includes(q) || a.id.includes(q)).forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'sitem';
+    d.innerHTML = `<b>${a.icon}</b>${a.name}`;
+    d.onclick = () => { open(a.id); toggleStart(); };
+    g.appendChild(d);
+  });
+  updateStartMeta();
+}
+function buildPins() {
+  const row = document.getElementById('pins');
+  row.innerHTML = '';
+  APPS.filter(a => a.pin).forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pin';
+    b.title = a.name;
+    b.textContent = a.icon;
+    b.onclick = () => open(a.id);
+    row.appendChild(b);
+  });
+}
+
+function open(name) {
+  document.getElementById('start').classList.remove('open');
+  const map = {
+    docs: appDocs, examples: appExamples, terminal: appTerminal,
+    editor: appEditor, playground: appPlayground, chat: appChat, images: appImages, audio: appAudio, appbuilder: appAppBuilder,
+    automation: appAutomation, '3d': app3D, video: appVideo,
+    network: appNetwork, bluetooth: appBluetooth, files: appFiles,
+    notes: appNotes, pixels: appPixels, kos: appKOS, vhw: appVHW,
+    sysmon: appSysMon, diskutil: appDiskUtil, taskmgr: appTaskMgr,
+    logs: appLogs, modules: appModules, settings: appSettings,
+    sys: appSys, about: appAbout, notifications: appNotif
+  };
+  if (map[name]) map[name]();
+}
+window.open = open;
+window.toggleStart = toggleStart;
+window.S = S;
+window.toast = toast;
+window.vfsRead = vfsRead;
+window.vfsWrite = vfsWrite;
+window.mountRealFolder = mountRealFolder;
+window.scanBluetooth = scanBluetooth;
+window.EventBus = EventBus;
+window.addNotification = addNotification;
+window.toggleTheme = toggleTheme;
+
+// ===================================================================
+//  AUTOMATION ENGINE
+// ===================================================================
+function generateId() { return 'auto-' + Date.now() + '-' + Math.random().toString(36).slice(2,6); }
+
+function addAutomation(name, trigger, action, schedule) {
+  const rule = {
+    id: generateId(),
+    name: name || 'Unnamed',
+    enabled: true,
+    trigger: trigger,
+    action: action,
+    schedule: schedule || null,
+    lastRun: null,
+    nextRun: null,
+    createdAt: Date.now()
+  };
+  S.automations.push(rule);
+  saveState();
+  log(`Automation created: ${name}`, 'INFO');
+  EventBus.emit('automation:created', { id: rule.id, name });
+  return rule;
+}
+
+function deleteAutomation(id) {
+  const idx = S.automations.findIndex(r => r.id === id);
+  if (idx > -1) {
+    const name = S.automations[idx].name;
+    S.automations.splice(idx, 1);
+    saveState();
+    log(`Automation deleted: ${name}`, 'INFO');
+    EventBus.emit('automation:deleted', { id, name });
+    return true;
+  }
+  return false;
+}
+
+function toggleAutomation(id) {
+  const rule = S.automations.find(r => r.id === id);
+  if (rule) {
+    rule.enabled = !rule.enabled;
+    saveState();
+    log(`Automation ${rule.enabled ? 'enabled' : 'disabled'}: ${rule.name}`, 'INFO');
+    EventBus.emit('automation:toggled', { id, enabled: rule.enabled });
+    return rule.enabled;
+  }
+  return false;
+}
+
+function runAutomation(id) {
+  const rule = S.automations.find(r => r.id === id);
+  if (!rule || !rule.enabled) return false;
+  return executeAutomation(rule);
+}
+
+function executeAutomation(rule) {
+  try {
+    const action = rule.action;
+    const result = executeAction(action);
+    rule.lastRun = Date.now();
+    if (rule.schedule) rule.nextRun = calculateNextRun(rule.schedule);
+    saveState();
+    S.automationLogs.push({ time: Date.now(), ruleId: rule.id, msg: `Executed: ${rule.name}`, ok: true });
+    if (S.automationLogs.length > 100) S.automationLogs.shift();
+    EventBus.emit('automation:executed', { id: rule.id, name: rule.name, result });
+    return result;
+  } catch (e) {
+    S.automationLogs.push({ time: Date.now(), ruleId: rule.id, msg: `Error in ${rule.name}: ${e.message}`, ok: false });
+    if (S.automationLogs.length > 100) S.automationLogs.shift();
+    EventBus.emit('automation:error', { id: rule.id, name: rule.name, error: e.message });
+    log(`Automation error: ${rule.name} – ${e.message}`, 'ERROR');
+    return null;
+  }
+}
+
+async function executeAction(action) {
+  const type = action.type;
+  const p = action.params || {};
+  switch (type) {
+    case 'openApp':
+      if (p.appId && typeof open === 'function') { open(p.appId); return { ok: true, app: p.appId }; }
+      return { ok: false, error: 'Invalid app ID' };
+    case 'closeApp': {
+      let closed = 0;
+      S.wins.forEach((w, id) => { if (!p.appId || w.dataset.app === p.appId) { close(id); closed++; } });
+      return { ok: true, closed };
+    }
+    case 'sendToast': toast(p.message || 'Automation toast'); return { ok: true, message: p.message };
+    case 'sendLog': log(p.message || 'Automation log', p.level || 'INFO'); return { ok: true, message: p.message };
+    case 'addNotification':
+      addNotification(p.message || 'Automation notification', p.type || 'info', p.title || '');
+      return { ok: true, message: p.message };
+    case 'runScript': {
+      const context = { S, vfsRead, vfsWrite, toast, log, open, EventBus, emitEvent: (n,d) => EventBus.emit(n,d),
+        console: { log: (...a) => S.automationLogs.push({ time: Date.now(), ruleId: 'script', msg: a.join(' '), ok: true }),
+          error: (...a) => S.automationLogs.push({ time: Date.now(), ruleId: 'script', msg: 'ERROR: '+a.join(' '), ok: false }) } };
+      const fn = new Function('S','vfsRead','vfsWrite','toast','log','open','EventBus','emitEvent','console',`"use strict";\n${p.script||''}`);
+      const result = fn(context.S, context.vfsRead, context.vfsWrite, context.toast, context.log, context.open, context.EventBus, context.emitEvent, context.console);
+      return { ok: true, result };
+    }
+    case 'runPython': {
+      if (!window.pyodideReady) await loadPyodide();
+      if (!window.pyodide) return { ok: false, error: 'Pyodide not loaded' };
+      try {
+        const result = await window.pyodide.runPythonAsync(p.script || '');
+        return { ok: true, result: String(result) };
+      } catch (e) { return { ok: false, error: e.message }; }
+    }
+    case 'writeFile': { const path = p.path || '/auto.txt'; await vfsWrite(path, p.content || ''); return { ok: true, path, content: p.content }; }
+    case 'readFile': { const path = p.path || '/auto.txt'; const content = await vfsRead(path); return { ok: true, path, content }; }
+    case 'bluetoothScan': await scanBluetooth(); return { ok: true };
+    case 'wifiToggle': S.net.wifi = !S.net.wifi; saveState(); updateBadge(); return { ok: true, state: S.net.wifi };
+    case 'hotspotToggle': S.net.hotspot = !S.net.hotspot; saveState(); updateBadge(); return { ok: true, state: S.net.hotspot };
+    case 'mountFolder': await mountRealFolder(); return { ok: true };
+    case 'systemCommand': {
+      const cmd = p.command || 'echo "Hello"';
+      let output = '';
+      if (cmd.startsWith('echo ')) output = cmd.slice(5);
+      else if (cmd === 'date') output = new Date().toString();
+      else if (cmd === 'uptime') { const up = (Date.now() - S.boot) / 1000 | 0; output = `${up}s`; }
+      else output = `[simulated] ${cmd}`;
+      toast('Command: ' + cmd);
+      return { ok: true, output };
+    }
+    case 'httpRequest': {
+      const url = p.url || '';
+      try {
+        const res = await fetch(url, { method: p.method || 'GET', headers: p.headers || {} });
+        const data = await res.text();
+        return { ok: true, status: res.status, data: data.slice(0, 200) };
+      } catch (e) { return { ok: false, error: e.message }; }
+    }
+    case 'customEvent': { const evt = p.event || 'custom'; EventBus.emit(evt, p.data || {}); return { ok: true, event: evt, data: p.data }; }
+    default: return { ok: false, error: `Unknown action type: ${type}` };
+  }
+}
+
+function checkScheduledAutomations() {
+  const now = Date.now();
+  S.automations.forEach(rule => {
+    if (!rule.enabled) return;
+    if (rule.schedule && rule.nextRun && now >= rule.nextRun) {
+      executeAutomation(rule);
+      rule.nextRun = calculateNextRun(rule.schedule);
+      saveState();
+    }
+  });
+}
+
+function calculateNextRun(schedule) {
+  const now = new Date();
+  if (!schedule) return null;
+  if (schedule.type === 'interval') {
+    const ms = (schedule.seconds||0)*1000 + (schedule.minutes||0)*60000 + (schedule.hours||0)*3600000;
+    return now.getTime() + ms;
+  }
+  if (schedule.type === 'daily') {
+    const h = schedule.hour||0, m = schedule.minute||0;
+    const next = new Date(now); next.setHours(h, m, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    return next.getTime();
+  }
+  if (schedule.type === 'weekly') {
+    const day = schedule.day||0, h = schedule.hour||0, m = schedule.minute||0;
+    const next = new Date(now); next.setHours(h, m, 0, 0);
+    const currentDay = next.getDay();
+    let diff = day - currentDay;
+    if (diff < 0 || (diff === 0 && next <= now)) diff += 7;
+    next.setDate(next.getDate() + diff);
+    return next.getTime();
+  }
+  return null;
+}
+
+function triggerAutomationEvent(eventName, data) {
+  S.automations.forEach(rule => {
+    if (!rule.enabled) return;
+    const trigger = rule.trigger;
+    if (trigger.type === 'event' && trigger.params && trigger.params.event === eventName) executeAutomation(rule);
+    if (trigger.type === 'fileChange' && eventName === 'file:changed') {
+      const path = data?.path || '';
+      const match = trigger.params?.path || '';
+      if (!match || path.includes(match) || match === '*') executeAutomation(rule);
+    }
+    if (trigger.type === 'appOpen' && eventName === 'app:opened') {
+      const appId = data?.app || '';
+      const match = trigger.params?.appId || '';
+      if (!match || appId === match || match === '*') executeAutomation(rule);
+    }
+    if (trigger.type === 'appClose' && eventName === 'app:closed') {
+      const appId = data?.app || '';
+      const match = trigger.params?.appId || '';
+      if (!match || appId === match || match === '*') executeAutomation(rule);
+    }
+    if (trigger.type === 'networkChange' && (eventName === 'network:scan' || eventName === 'network:changed')) executeAutomation(rule);
+    if (trigger.type === 'bluetoothConnect' && eventName === 'bluetooth:connected') executeAutomation(rule);
+  });
+}
+
+// ===================================================================
+//  PYODIDE LOADER
+// ===================================================================
+let pyodideReady = false;
+let pyodide = null;
+async function loadPyodide() {
+  if (pyodideReady) return;
+  try {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js';
+    document.head.appendChild(script);
+    await new Promise((res,rej) => { script.onload = res; script.onerror = rej; });
+    pyodide = await globalThis.loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.1/full/' });
+    pyodideReady = true;
+    window.pyodide = pyodide;
+    window.pyodideReady = true;
+  } catch(e) { console.warn('Pyodide load failed', e); }
+}
+
+// ===================================================================
+//  APP DEFINITIONS (condensed but full)
+// ===================================================================
+// Docs, Examples, Terminal, Editor, Playground, Chat, Images, Audio, AppBuilder,
+// Automation, 3D, Video, Network, Bluetooth, Files, Notes, Pixels, KOS, VHW,
+// SysMon, DiskUtil, TaskMgr, Logs, Modules, Settings, System, About, Notifications
+
+// ===================================================================
+//  ÆTHER PROGRAMMING LANGUAGE — Full interpreter
+// ===================================================================
+const AetherTT = {
+  EOF:'EOF', ID:'ID', NUM:'NUM', STR:'STR',
+  PLUS:'+', MINUS:'-', STAR:'*', SLASH:'/', PCT:'%',
+  EQ:'=', EQEQ:'==', NEQ:'!=', LT:'<', GT:'>', LTE:'<=', GTE:'>=',
+  AND:'&&', OR:'||', NOT:'!',
+  LP:'(', RP:')', LB:'[', RB:']', LC:'{', RC:'}',
+  COMMA:',', DOT:'.', COLON:':', SEMI:';',
+  KW_LET:'let', KW_FN:'fn', KW_IF:'if', KW_ELSE:'else',
+  KW_WHILE:'while', KW_FOR:'for', KW_RETURN:'return', KW_IN:'in',
+  KW_TRUE:'true', KW_FALSE:'false', KW_NIL:'nil', KW_PRINT:'print'
+};
+const AetherKW = {};
+for (const k of Object.keys(AetherTT)) if (k.startsWith('KW_')) AetherKW[AetherTT[k]] = AetherTT[k];
+AetherKW['null'] = AetherTT.KW_NIL;
+
+class AetherLexer {
+  constructor(s){ this.s=String(s||''); this.i=0; this.line=1; }
+  peek(){ return this.s[this.i]||''; }
+  next(){ const c=this.s[this.i++]; if(c==='\n') this.line++; return c; }
+  skip(){
+    while(this.i<this.s.length){
+      const c=this.peek();
+      if(c===' '||c==='\t'||c==='\r'||c==='\n'){ this.next(); continue; }
+      if(c==='#'||(c==='/'&&this.s[this.i+1]==='/')){ while(this.i<this.s.length&&this.peek()!=='\n') this.next(); continue; }
+      if(c==='/'&&this.s[this.i+1]==='*'){ this.next(); this.next(); while(this.i<this.s.length&&!(this.peek()==='*'&&this.s[this.i+1]==='/')) this.next(); this.next(); this.next(); continue; }
+      break;
+    }
+  }
+  tokenize(){
+    const toks=[];
+    while(true){
+      this.skip();
+      if(this.i>=this.s.length){ toks.push({type:AetherTT.EOF,line:this.line}); break; }
+      const c=this.peek();
+      if(/[0-9]/.test(c)){
+        let n=''; while(/[0-9.]/.test(this.peek())) n+=this.next();
+        toks.push({type:AetherTT.NUM, value:parseFloat(n), line:this.line}); continue;
+      }
+      if(/[a-zA-Z_]/.test(c)){
+        let id=''; while(/[a-zA-Z0-9_]/.test(this.peek())) id+=this.next();
+        const kw=AetherKW[id];
+        toks.push(kw ? {type:kw, value:id, line:this.line} : {type:AetherTT.ID, value:id, line:this.line}); continue;
+      }
+      if(c==='"'||c==="'"){
+        const q=this.next(); let str='';
+        while(this.i<this.s.length&&this.peek()!==q){
+          if(this.peek()==='\\'){ this.next(); const e=this.next(); str += ({n:'\n',t:'\t',r:'\r','"':'"',"'":"'",'\\':'\\'}[e]||e); }
+          else str+=this.next();
+        }
+        this.next();
+        toks.push({type:AetherTT.STR, value:str, line:this.line}); continue;
+      }
+      const two=this.s.slice(this.i,this.i+2);
+      const ops={'==':AetherTT.EQEQ,'!=':AetherTT.NEQ,'<=':AetherTT.LTE,'>=':AetherTT.GTE,'&&':AetherTT.AND,'||':AetherTT.OR};
+      if(ops[two]){ this.next(); this.next(); toks.push({type:ops[two], line:this.line}); continue; }
+      const one={'+':AetherTT.PLUS,'-':AetherTT.MINUS,'*':AetherTT.STAR,'/':AetherTT.SLASH,'%':AetherTT.PCT,'=':AetherTT.EQ,
+        '<':AetherTT.LT,'>':AetherTT.GT,'!':AetherTT.NOT,'(':AetherTT.LP,')':AetherTT.RP,'[':AetherTT.LB,']':AetherTT.RB,
+        '{':AetherTT.LC,'}':AetherTT.RC,',':AetherTT.COMMA,'.':AetherTT.DOT,':':AetherTT.COLON,';':AetherTT.SEMI};
+      if(one[c]){ this.next(); toks.push({type:one[c], line:this.line}); continue; }
+      throw new Error('Aether lex error at line '+this.line+': '+c);
+    }
+    return toks;
+  }
+}
+
+class AetherParser {
+  constructor(toks){ this.t=toks; this.i=0; }
+  peek(){ return this.t[this.i]||{type:AetherTT.EOF}; }
+  adv(){ return this.t[this.i++]; }
+  match(...types){ if(types.includes(this.peek().type)) return this.adv(); return null; }
+  expect(type){ const t=this.adv(); if(t.type!==type) throw new Error('Expected '+type+' got '+t.type+' (line '+t.line+')'); return t; }
+  parse(){ const body=[]; while(this.peek().type!==AetherTT.EOF){ body.push(this.stmt()); this.match(AetherTT.SEMI); } return {type:'block', body}; }
+  stmt(){
+    const p=this.peek();
+    if(p.type===AetherTT.KW_LET){ this.adv(); const name=this.expect(AetherTT.ID).value; this.expect(AetherTT.EQ); return {type:'let', name, value:this.expr()}; }
+    if(p.type===AetherTT.KW_FN){ this.adv(); const name=this.expect(AetherTT.ID).value; this.expect(AetherTT.LP);
+      const params=[]; if(this.peek().type!==AetherTT.RP){ do{ params.push(this.expect(AetherTT.ID).value); }while(this.match(AetherTT.COMMA)); }
+      this.expect(AetherTT.RP); return {type:'fn', name, params, body:this.block()};
+    }
+    if(p.type===AetherTT.KW_IF){ this.adv(); const cond=this.expr(); const th=this.block(); let el=null;
+      if(this.match(AetherTT.KW_ELSE)) el = this.peek().type===AetherTT.KW_IF ? this.stmt() : this.block();
+      return {type:'if', cond, th, el};
+    }
+    if(p.type===AetherTT.KW_WHILE){ this.adv(); const cond=this.expr(); return {type:'while', cond, body:this.block()}; }
+    if(p.type===AetherTT.KW_FOR){ this.adv(); const name=this.expect(AetherTT.ID).value; this.expect(AetherTT.KW_IN); const iter=this.expr();
+      return {type:'for', name, iter, body:this.block()};
+    }
+    if(p.type===AetherTT.KW_RETURN){ this.adv(); return {type:'return', value: this.peek().type===AetherTT.RC||this.peek().type===AetherTT.EOF||this.peek().type===AetherTT.SEMI ? null : this.expr()}; }
+    if(p.type===AetherTT.KW_PRINT){ this.adv(); const args=[]; if(this.match(AetherTT.LP)){ if(this.peek().type!==AetherTT.RP){ do{ args.push(this.expr()); }while(this.match(AetherTT.COMMA)); } this.expect(AetherTT.RP); } else if(this.peek().type!==AetherTT.SEMI&&this.peek().type!==AetherTT.RC&&this.peek().type!==AetherTT.EOF){ do{ args.push(this.expr()); }while(this.match(AetherTT.COMMA)); } return {type:'print', args}; }
+    if(p.type===AetherTT.ID && this.t[this.i+1]&&this.t[this.i+1].type===AetherTT.EQ){ const name=this.adv().value; this.adv(); return {type:'assign', name, value:this.expr()}; }
+    return {type:'expr', value:this.expr()};
+  }
+  block(){ this.expect(AetherTT.LC); const body=[]; while(this.peek().type!==AetherTT.RC&&this.peek().type!==AetherTT.EOF){ body.push(this.stmt()); this.match(AetherTT.SEMI); } this.expect(AetherTT.RC); return {type:'block', body}; }
+  expr(){ return this.or(); }
+  or(){ let l=this.and(); while(this.match(AetherTT.OR)){ const r=this.and(); l={type:'bin', op:'||', left:l, right:r}; } return l; }
+  and(){ let l=this.eq(); while(this.match(AetherTT.AND)){ const r=this.eq(); l={type:'bin', op:'&&', left:l, right:r}; } return l; }
+  eq(){ let l=this.cmp(); while(true){ const t=this.match(AetherTT.EQEQ,AetherTT.NEQ); if(!t) break; l={type:'bin', op:t.type, left:l, right:this.cmp()}; } return l; }
+  cmp(){ let l=this.term(); while(true){ const t=this.match(AetherTT.LT,AetherTT.GT,AetherTT.LTE,AetherTT.GTE); if(!t) break; l={type:'bin', op:t.type, left:l, right:this.term()}; } return l; }
+  term(){ let l=this.fact(); while(true){ const t=this.match(AetherTT.PLUS,AetherTT.MINUS); if(!t) break; l={type:'bin', op:t.type, left:l, right:this.fact()}; } return l; }
+  fact(){ let l=this.unary(); while(true){ const t=this.match(AetherTT.STAR,AetherTT.SLASH,AetherTT.PCT); if(!t) break; l={type:'bin', op:t.type, left:l, right:this.unary()}; } return l; }
+  unary(){ if(this.match(AetherTT.NOT,AetherTT.MINUS)){ const op=this.t[this.i-1].type; return {type:'unary', op, value:this.unary()}; } return this.call(); }
+  call(){
+    let e=this.primary();
+    while(true){
+      if(this.match(AetherTT.LP)){ const args=[]; if(this.peek().type!==AetherTT.RP){ do{ args.push(this.expr()); }while(this.match(AetherTT.COMMA)); } this.expect(AetherTT.RP); e={type:'call', callee:e, args}; }
+      else if(this.match(AetherTT.LB)){ const idx=this.expr(); this.expect(AetherTT.RB); e={type:'index', object:e, index:idx}; }
+      else if(this.match(AetherTT.DOT)){ const name=this.expect(AetherTT.ID).value; e={type:'prop', object:e, name}; }
+      else break;
+    }
+    return e;
+  }
+  primary(){
+    const t=this.peek();
+    if(t.type===AetherTT.NUM){ this.adv(); return {type:'num', value:t.value}; }
+    if(t.type===AetherTT.STR){ this.adv(); return {type:'str', value:t.value}; }
+    if(t.type===AetherTT.KW_TRUE){ this.adv(); return {type:'bool', value:true}; }
+    if(t.type===AetherTT.KW_FALSE){ this.adv(); return {type:'bool', value:false}; }
+    if(t.type===AetherTT.KW_NIL){ this.adv(); return {type:'nil', value:null}; }
+    if(t.type===AetherTT.ID){ this.adv(); return {type:'id', name:t.value}; }
+    if(t.type===AetherTT.LP){ this.adv(); const e=this.expr(); this.expect(AetherTT.RP); return e; }
+    if(t.type===AetherTT.LB){ this.adv(); const els=[]; if(this.peek().type!==AetherTT.RB){ do{ els.push(this.expr()); }while(this.match(AetherTT.COMMA)); } this.expect(AetherTT.RB); return {type:'list', elements:els}; }
+    if(t.type===AetherTT.LC){ this.adv(); const keys=[], vals=[]; if(this.peek().type!==AetherTT.RC){ do{ const k = this.peek().type===AetherTT.STR||this.peek().type===AetherTT.ID ? this.adv().value : String(this.expr()); this.expect(AetherTT.COLON); keys.push(k); vals.push(this.expr()); }while(this.match(AetherTT.COMMA)); } this.expect(AetherTT.RC); return {type:'dict', keys, vals}; }
+    throw new Error('Unexpected token '+t.type+' (line '+t.line+')');
+  }
+}
+
+class AetherReturn { constructor(v){ this.value=v; } }
+
+class AetherRT {
+  constructor(printFn){
+    this.printFn = printFn || ((...a)=>console.log(...a));
+    this.globals = Object.create(null);
+    this.installBuiltins();
+  }
+  installBuiltins(){
+    const g=this.globals;
+    const str=v=>{
+      if(v===null||v===undefined) return 'nil';
+      if(typeof v==='string') return v;
+      if(typeof v==='number'||typeof v==='boolean') return String(v);
+      if(Array.isArray(v)) return '['+v.map(str).join(', ')+']';
+      if(typeof v==='object') return '{'+Object.entries(v).map(([k,x])=>k+': '+str(x)).join(', ')+'}';
+      if(typeof v==='function') return '<fn>';
+      return String(v);
+    };
+    g.print = (...a)=>{ this.printFn(a.map(str).join(' ')); return a[0]; };
+    g.str = str; g.int = x=>Math.trunc(Number(x))||0; g.float = x=>Number(x)||0; g.bool = x=>!!x;
+    g.type = v=>Array.isArray(v)?'list':v===null?'nil':typeof v;
+    g.len = x=>x&&x.length!==undefined?x.length:0;
+    g.range = (a,b)=>{ if(b===undefined){b=a;a=0;} const r=[]; for(let i=a;i<b;i++) r.push(i); return r; };
+    g.push = (a,v)=>{ if(Array.isArray(a)) a.push(v); return a; };
+    g.pop = a=>Array.isArray(a)?a.pop():null;
+    g.join = (a,s)=>Array.isArray(a)?a.map(str).join(s??','):'';
+    g.split = (s,sep)=>String(s).split(sep??',');
+    g.slice = (a,i,j)=>a&&a.slice?a.slice(i,j):[];
+    g.keys = d=>d&&typeof d==='object'?Object.keys(d):[];
+    g.values = d=>d&&typeof d==='object'?Object.values(d):[];
+    g.abs=Math.abs; g.floor=Math.floor; g.ceil=Math.ceil; g.round=Math.round;
+    g.sqrt=Math.sqrt; g.sin=Math.sin; g.cos=Math.cos; g.pow=Math.pow;
+    g.min=(...a)=>Math.min(...a.map(Number)); g.max=(...a)=>Math.max(...a.map(Number));
+    g.rand=()=>Math.random(); g.time=()=>Date.now();
+    g.pi=Math.PI; g.e=Math.E;
+    g.upper=s=>String(s).toUpperCase(); g.lower=s=>String(s).toLowerCase(); g.trim=s=>String(s).trim();
+    g.sum=a=>Array.isArray(a)?a.reduce((p,c)=>p+Number(c),0):0;
+    g.map=(a,fn)=>Array.isArray(a)?a.map(x=>fn(x)): [];
+    g.filter=(a,fn)=>Array.isArray(a)?a.filter(x=>fn(x)): [];
+    g.os_time = ()=>new Date().toLocaleString();
+    g.os_uptime = ()=> ((Date.now()-(typeof S!=='undefined'?S.boot:Date.now()))/1000)|0;
+    g.os_log = (msg, level)=>{ if(typeof log==='function') log(String(msg), level||'INFO'); return msg; };
+    g.os_toast = (msg)=>{ if(typeof toast==='function') toast(String(msg)); return msg; };
+    g.os_open = (app)=>{ if(typeof open==='function') open(String(app)); return app; };
+    g.os_notify = (msg, type, title)=>{ addNotification(String(msg), type||'info', title||''); return msg; };
+    g.fs_list = ()=>{ if(typeof S==='undefined') return []; return Array.from(S.fs.keys()); };
+    g.fs_read = (path)=>{ if(typeof S==='undefined') return null; return S.fs.has(path)?S.fs.get(path):null; };
+    g.fs_write = (path, data)=>{ if(typeof S==='undefined') return false; S.fs.set(String(path), String(data)); if(typeof saveState==='function') saveState(); return true; };
+    g.fs_search = (query)=>searchFiles(query);
+    g.sys_cpu = ()=> (typeof S!=='undefined' ? S.hardware.cpu.load : 0);
+    g.sys_ram = ()=> (typeof S!=='undefined' ? (S.hardware.ram.used/S.hardware.ram.total*100) : 0);
+    g.sys_info = ()=>{
+      if(typeof S==='undefined') return {os:'Æther OS'};
+      return { os: 'Æther OS Ultimate', uptime: ((Date.now()-S.boot)/1000)|0,
+        windows: S.wins.size, files: S.fs.size, cpu: S.hardware.cpu.load,
+        ram: S.hardware.ram.used, automations: (S.automations||[]).length };
+    };
+    g.shell = (cmd)=>{
+      const c=String(cmd||'').trim();
+      if(c==='help') return 'help, info, ls, ps, neofetch, open <app>, aether <code>, search <query>';
+      if(c==='info'||c==='neofetch') return str(g.sys_info());
+      if(c==='ls') return str(g.fs_list());
+      if(c.startsWith('open ')){ g.os_open(c.slice(5).trim()); return 'opened'; }
+      if(c.startsWith('search ')){ const r = searchFiles(c.slice(7).trim()); return str(r); }
+      return 'unknown: '+c;
+    };
+    // Image APIs
+    g.image_create = (w,h)=>{
+      const c=document.createElement('canvas');
+      c.width=Math.max(8, Number(w)||64); c.height=Math.max(8, Number(h)||64);
+      const ctx=c.getContext('2d');
+      ctx.fillStyle='#0a0a12'; ctx.fillRect(0,0,c.width,c.height);
+      return { __img:true, c, ctx, w:c.width, h:c.height };
+    };
+    g.image_fill = (img,r,gch,b)=>{ if(!img||!img.ctx) return null; img.ctx.fillStyle='rgb('+(r|0)+','+(gch|0)+','+(b|0)+')'; img.ctx.fillRect(0,0,img.w,img.h); return img; };
+    g.image_pixel = (img,x,y,r,gch,b)=>{ if(!img||!img.ctx) return null; img.ctx.fillStyle='rgb('+(r|0)+','+(gch|0)+','+(b|0)+')'; img.ctx.fillRect(x|0,y|0,1,1); return img; };
+    g.image_text = (img,t,x,y,r,gch,b)=>{ if(!img||!img.ctx) return null; img.ctx.fillStyle='rgb('+(r|0)+','+(gch|0)+','+(b|0)+')'; img.ctx.font='16px monospace'; img.ctx.fillText(String(t),x|0,y|0); return img; };
+    g.image_save = (img, path)=>{
+      if(!img||!img.c) return null;
+      const url=img.c.toDataURL('image/png');
+      const p=String(path||('/media/img_'+Date.now()+'.png'));
+      if(typeof S!=='undefined'){ S.fs.set(p, url); if(typeof saveState==='function') saveState(); }
+      if(!window.__aetherImages) window.__aetherImages=[];
+      window.__aetherImages.push({path:p,url,ts:Date.now()});
+      return url;
+    };
+    g.image_rect = (img,x,y,w,h,r,gc,b)=>{ if(!img||!img.ctx) return null; img.ctx.fillStyle='rgb('+(r|0)+','+(gc|0)+','+(b|0)+')'; img.ctx.fillRect(x|0,y|0,w|0,h|0); return img; };
+    g.image_line = (img,x1,y1,x2,y2,r,gc,b)=>{ if(!img||!img.ctx) return null; img.ctx.strokeStyle='rgb('+(r|0)+','+(gc|0)+','+(b|0)+')'; img.ctx.beginPath(); img.ctx.moveTo(x1,y1); img.ctx.lineTo(x2,y2); img.ctx.stroke(); return img; };
+    g.image_circle = (img,x,y,rad,r,gc,b)=>{ if(!img||!img.ctx) return null; img.ctx.fillStyle='rgb('+(r|0)+','+(gc|0)+','+(b|0)+')'; img.ctx.beginPath(); img.ctx.arc(x,y,rad,0,Math.PI*2); img.ctx.fill(); return img; };
+    g.image_generate = (kind, w, h, seed)=>{
+      const img=g.image_create(w||128, h||128);
+      const ctx=img.ctx; const W=img.w, H=img.h;
+      const s=Number(seed)||(Date.now()%10000);
+      const rnd=(n)=>{ let x=Math.sin(s*12.9898+n*78.233)*43758.5453; return x-Math.floor(x); };
+      kind=String(kind||'noise').toLowerCase();
+      if(kind==='gradient'){
+        for(let y=0;y<H;y++){ for(let x=0;x<W;x++){ const r=(x/W*255)|0, gch=(y/H*200)|0, b=((x+y)/(W+H)*255)|0; ctx.fillStyle=`rgb(${r},${gch},${b})`; ctx.fillRect(x,y,1,1); }}
+      } else if(kind==='plasma'||kind==='noise'){
+        for(let y=0;y<H;y++){ for(let x=0;x<W;x++){ const n=rnd(x*0.1+y*0.3)*255|0; const r=n, gch=(n*0.7+(x%40))|0, b=(80+rnd(y+x)*100)|0; ctx.fillStyle=`rgb(${r},${gch},${b})`; ctx.fillRect(x,y,1,1); }}
+      } else if(kind==='checker'){
+        for(let y=0;y<H;y++){ for(let x=0;x<W;x++){ const on=((x>>4)^(y>>4))&1; ctx.fillStyle=on?'#8b7cff':'#1b1b25'; ctx.fillRect(x,y,1,1); }}
+      } else if(kind==='chart'){
+        ctx.fillStyle='#0a0a12'; ctx.fillRect(0,0,W,H);
+        ctx.strokeStyle='#8b7cff'; ctx.beginPath();
+        for(let x=0;x<W;x++){ const v=H/2+Math.sin((x+s)*0.08)*H*0.3+Math.sin((x+s)*0.02)*H*0.1; if(x===0) ctx.moveTo(x,v); else ctx.lineTo(x,v); }
+        ctx.stroke();
+        ctx.fillStyle='#c4b5fd'; ctx.font='12px monospace'; ctx.fillText('signal '+s, 8, 16);
+      } else if(kind==='avatar'){
+        ctx.fillStyle='#1b1b25'; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle='#8b7cff'; ctx.beginPath(); ctx.arc(W/2,H*0.38,W*0.18,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(W/2,H*0.78,W*0.28,H*0.22,0,0,Math.PI*2); ctx.fill();
+      } else { g.image_fill(img, 20, 20, 40); g.image_text(img, kind, 8, 24, 200, 200, 255); }
+      return img;
+    };
+    g.assert = (cond, msg)=>{ if(!cond) throw new Error('assert failed: '+(msg||'')); return true; };
+    g.test_eq = (a,b,msg)=>{ if(a!==b) throw new Error('test_eq failed: '+(msg||'')+' got '+str(a)+' expected '+str(b)); return true; };
+    g.app_scaffold = (name, desc)=>{
+      const n=String(name||'my-app').replace(/[^a-zA-Z0-9_-]/g,'-');
+      const code = `# App: ${n}\n# ${desc||''}\nprint("Boot ${n}")\nlet info = sys_info()\nprint(info)\nfs_write("/apps/${n}/main.ae", "print(\"${n} ready\")")\nprint("Scaffolded /apps/${n}/")\n`;
+      if(typeof S!=='undefined'){ S.fs.set('/apps/'+n+'/main.ae', code); S.fs.set('/apps/'+n+'/README.txt', String(desc||n)+'\nBuilt with Æther App Builder'); if(typeof saveState==='function') saveState(); }
+      return { name:n, path:'/apps/'+n+'/main.ae', code };
+    };
+    g.app_run = (path)=>{ const p=String(path||''); const src = (typeof S!=='undefined' && S.fs.has(p)) ? S.fs.get(p) : null; if(!src) throw new Error('app not found: '+p); return this.run(src); };
+    // Audio
+    g.audio_beep = (freq, sec)=>{
+      try { const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return 'no AudioContext';
+        if(!window.__aetherAC) window.__aetherAC=new AC(); const ac=window.__aetherAC;
+        const o=ac.createOscillator(); const g=ac.createGain();
+        o.frequency.value=Number(freq)||440; o.type='sine';
+        g.gain.value=0.08; o.connect(g); g.connect(ac.destination);
+        const t=ac.currentTime; const dur=Math.min(2, Math.max(0.05, Number(sec)||0.2));
+        g.gain.setValueAtTime(0.08,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+        o.start(t); o.stop(t+dur+0.02); return true;
+      } catch(e){ return 'audio error: '+e.message; }
+    };
+    g.speak = (text)=>{ try { if(!window.speechSynthesis) return 'no speechSynthesis';
+        const u=new SpeechSynthesisUtterance(String(text||'')); u.rate=1; u.pitch=1; window.speechSynthesis.speak(u); return true;
+      } catch(e){ return e.message; }
+    };
+    g.llm_ask = (q)=>{
+      const s=String(q||'').toLowerCase().trim();
+      if(!s) return 'Ask me about building apps, images, audio, files, tests, or system tools.';
+      const kb=[
+        {k:['file','save','fs_write','write','hyperfs'], a:'Persist data with fs_write(path, data) and fs_read(path). Paths like /apps/my-tool/main.ae. Open HyperFS or Files to browse.'},
+        {k:['image_generate','generate image','procedural'], a:'image_generate(kind, w, h, seed) kinds: noise, plasma, gradient, checker, chart, avatar. Then image_save(img, path).'},
+        {k:['image','png','picture','draw','canvas'], a:'Pipeline: img=image_create(w,h) → image_fill/image_pixel/image_rect/image_circle/image_text → image_save(img,"/media/out.png"). Preview in Images app.'},
+        {k:['audio','sound','beep','tone','music'], a:'audio_beep(freq_hz, seconds) uses Web Audio. speak(text) uses Speech Synthesis. Try Audio Lab for interactive tones.'},
+        {k:['speak','tts','voice','say'], a:'speak("hello") queues browser TTS. User may need to interact once so the browser allows speech.'},
+        {k:['llm','chat','ai','model','assistant'], a:'llm_ask(q) is an offline knowledge helper (no API key). For richer models you can add remote endpoints later; CORS still applies in the browser.'},
+        {k:['test','assert','unit'], a:'assert(cond, msg) and test_eq(a,b,msg) throw on failure — use them in Playground to unit-test logic before shipping a mini-app.'},
+        {k:['app','scaffold','builder','create app'], a:'app_scaffold(name, desc) writes /apps/<name>/main.ae. app_run(path) executes it. Or use the App Builder UI to generate + run.'},
+        {k:['automat','rule','trigger','schedule'], a:'Automation app: triggers (startup, interval, time, app open) + actions (toast, log, open app, write file). Pair with Æther scripts for complex logic.'},
+        {k:['cpu','ram','health','monitor','sys_'], a:'sys_cpu(), sys_ram(), sys_info() for virtual telemetry. System Monitor / Task Manager for live ops view.'},
+        {k:['terminal','shell','command'], a:'Terminal: neofetch, ps, ls, open <app>, aether <code>, or : <expr>. Full scripts belong in Playground.'},
+        {k:['http','fetch','api','network'], a:'http_get(url) starts a real browser fetch (CORS may block). Result is stored under /net/ when complete.'},
+        {k:['search','find','lookup'], a:'fs_search(query) finds files by path or content. Terminal: search <query>.'},
+        {k:['theme','dark','light','appearance'], a:'toggleTheme() or Settings → Theme switches between dark and light mode.'},
+        {k:['notif','notification','bell'], a:'os_notify(msg, type, title) adds to Notification Center. Open Notifications app to see history.'},
+        {k:['what can','help','capabilities','aether os'], a:'Æther OS = desktop shell + real Æther language + HyperFS + image/audio/speech APIs + automation + app scaffolding + notifications. Build → test → run mini-apps entirely in-browser.'},
+      ];
+      for(const row of kb){ if(row.k.some(w=>s.includes(w))) return row.a; }
+      if(s.startsWith('how do i ') || s.startsWith('how to '))
+        return 'Break it into steps in Playground: define fn, assert tests, then fs_write the script under /apps/. Ask more specifically (image, audio, file, test, app, automation, shell).';
+      return 'Not sure yet. Try keywords: image, audio, file, test, app, automation, shell, search, theme, notif. Or open Docs → Language / OS API.';
+    };
+    g.http_get = (url)=>{
+      const id='http_'+Date.now();
+      const u=String(url||'');
+      fetch(u,{method:'GET'}).then(async r=>{
+        const text=await r.text();
+        const payload={ok:r.ok,status:r.status,bytes:text.length,preview:text.slice(0,400)};
+        if(typeof S!=='undefined') S.fs.set('/net/'+id+'.json', JSON.stringify(payload));
+        if(typeof toast==='function') toast('http_get '+r.status);
+        if(typeof addNotification==='function') addNotification('HTTP '+r.status+' from '+u, r.ok?'info':'error', 'Network');
+      }).catch(e=>{
+        if(typeof S!=='undefined') S.fs.set('/net/'+id+'.json', JSON.stringify({ok:false,error:String(e.message||e)}));
+        if(typeof addNotification==='function') addNotification('HTTP error: '+e.message, 'error', 'Network');
+      });
+      return {job:id, note:'async — result at /net/'+id+'.json'};
+    };
+    // KOS, LightSpeed, Oracle, Brain, Heart, VHW, Pixel, ASI
+    g.kos_add = (title, type, body, tags, conf) => KOS.add(title, type, body, tags, conf);
+    g.kos_link = (from, to, type, conf) => KOS.link(from, to, type, conf);
+    g.kos_get = (id) => KOS.get(id);
+    g.kos_query = (terms, limit) => KOS.query(terms, limit);
+    g.kos_verify = (id, by, conf) => KOS.verify(id, by, conf);
+    g.kos_challenge = (id, by, note) => KOS.challenge(id, by, note);
+    g.kos_trace = (id, depth) => KOS.trace(id, depth);
+    g.kos_status = () => KOS.status();
+    g.kos_backup = () => KOS.backup();
+    g.kos_agent = (type, role) => KOS.registerAgent(type, role);
+    g.ls_learn = (expr, val) => LightSpeed.learn(expr, val);
+    g.ls_recall = (expr) => LightSpeed.recall(expr);
+    g.ls_run = (src) => LightSpeed.run(String(src||''), (m)=>{ try{g.print(m);}catch(e){} });
+    g.ls_status = () => LightSpeed.status();
+    g.ultimate_ask = (q) => UltimateOracle.ask(q);
+    g.ultimate_status = () => UltimateOracle.status();
+    g.oracle_query = (q) => VHWOracle.query(q);
+    g.oracle_predict = (h) => VHWOracle.predict(h);
+    g.oracle_amplify = (u, f) => VHWOracle.amplify(u, f);
+    g.oracle_teach = (f) => VHWOracle.teach(f);
+    g.oracle_status = () => VHWOracle.status();
+    g.brain_think = (t) => Brain.think(t);
+    g.brain_goal = (g) => Brain.setGoal(g);
+    g.brain_status = () => Brain.status();
+    g.brain_plan = (g) => Brain.plan(g);
+    g.brain_learn = (f) => Brain.learn(f);
+    g.brain_reflect = () => Brain.reflect();
+    g.brain_dream = () => Brain.dream();
+    g.heart_beat = () => Heart.beat();
+    g.heart_run = (src) => Heart.runLanguage(String(src||''), (m) => { try { g.print(m); } catch(e){} });
+    g.heart_status = () => Heart.status();
+    g.heart_recover = () => Heart.recover();
+    g.heart_tempo = (bpm) => Heart.setTempo(bpm);
+    g.boot_core = () => bootAetherCore((m) => { try { g.print(m); } catch(e){} });
+    g.pixel_encode = (value, typeHint, path) => PixelCodec.encode(value, typeHint, path);
+    g.pixel_decode = (path) => PixelCodec.decode(path);
+    g.pixel_roundtrip = (value, typeHint) => PixelCodec.roundTrip(value, typeHint);
+    g.pixel_list = () => PixelCodec.list();
+    g.pixel_store_code = (code, path) => PixelCodec.encode(String(code||''), 'aether', path || ('/pixels/code_'+Date.now()+'.aepx'));
+    g.pixel_store_app = (appObj, path) => PixelCodec.encode(appObj, 'app', path || ('/pixels/app_'+Date.now()+'.aepx'));
+    g.pixel_store_os = (snap, path) => PixelCodec.encode(snap || { t: Date.now() }, 'os', path || '/pixels/os_snapshot.aepx');
+    g.vhw_all = () => VHW.all();
+    g.vhw_tick = () => VHW.tick();
+    g.vhw_pulse = (u, a) => VHW.pulse(String(u||'vCPU'), a);
+    g.vhw_attend = (task) => VHW.attend(task);
+    g.vhw_compute = (ops) => VHW.compute(ops);
+    g.vhw_log = (n) => VHW.log(n);
+    g.vhw_stat = (k) => { const v = VHW.ensure(); return v ? v[k] : null; };
+    g.asi_run = (goal) => { const r = AetherASI.run(String(goal || ''), (m) => { try { g.print(m); } catch (e) {} }); return r.ok ? ('ASI ok') : ('ASI error: ' + r.error); };
+    g.asi_status = () => AetherASI.status();
+    g.asi_plan = (goal) => AetherASI.plan(String(goal || ''));
+    g.asi_memory = () => AetherASI.memory.slice(-10);
+    g.asi_query = (q) => AetherASI.query(String(q||''));
+    g.asi_reflect = () => AetherASI.reflect();
+    g.asi_learn = (f) => AetherASI.learn(String(f||''));
+  }
+  run(src){
+    const lexer=new AetherLexer(src);
+    const toks=lexer.tokenize();
+    const parser=new AetherParser(toks);
+    const ast=parser.parse();
+    const env=Object.create(this.globals);
+    try { return this.exec(ast, env); }
+    catch(e){ if(e instanceof AetherReturn) return e.value; throw e; }
+  }
+  exec(node, env){
+    if(!node) return null;
+    switch(node.type){
+      case 'block': { let last=null; for(const s of node.body) last=this.exec(s, env); return last; }
+      case 'let': env[node.name]=this.eval(node.value, env); return env[node.name];
+      case 'assign': {
+        let e=env; while(e && !(node.name in e) && Object.getPrototypeOf(e)!==Object.prototype) e=Object.getPrototypeOf(e);
+        if(node.name in env) env[node.name]=this.eval(node.value, env);
+        else if(node.name in this.globals) this.globals[node.name]=this.eval(node.value, env);
+        else env[node.name]=this.eval(node.value, env);
+        return env[node.name]!==undefined?env[node.name]:this.globals[node.name];
+      }
+      case 'fn': {
+        const fn=(...args)=>{
+          const local=Object.create(env);
+          node.params.forEach((p,i)=>local[p]=args[i]);
+          try { return this.exec(node.body, local); }
+          catch(e){ if(e instanceof AetherReturn) return e.value; throw e; }
+        };
+        env[node.name]=fn; return fn;
+      }
+      case 'if': return this.eval(node.cond, env) ? this.exec(node.th, env) : (node.el?this.exec(node.el, env):null);
+      case 'while': { let last=null; let guard=0; while(this.eval(node.cond, env)){ last=this.exec(node.body, env); if(++guard>100000) throw new Error('while: infinite loop guard'); } return last; }
+      case 'for': { const it=this.eval(node.iter, env); const arr=Array.isArray(it)?it: (typeof it==='string'?[...it]:[]); let last=null; for(const x of arr){ env[node.name]=x; last=this.exec(node.body, env); } return last; }
+      case 'return': throw new AetherReturn(node.value?this.eval(node.value, env):null);
+      case 'print': { const vals=node.args.map(a=>this.eval(a, env)); this.globals.print(...vals); return vals[vals.length-1]; }
+      case 'expr': return this.eval(node.value, env);
+      default: return this.eval(node, env);
+    }
+  }
+  eval(node, env){
+    if(!node) return null;
+    switch(node.type){
+      case 'num': case 'str': case 'bool': case 'nil': return node.value;
+      case 'id': {
+        if(node.name in env) return env[node.name];
+        if(node.name in this.globals) return this.globals[node.name];
+        throw new Error("Undefined '"+node.name+"'");
+      }
+      case 'list': return node.elements.map(e=>this.eval(e, env));
+      case 'dict': { const o={}; for(let i=0;i<node.keys.length;i++) o[node.keys[i]]=this.eval(node.vals[i], env); return o; }
+      case 'unary': { const v=this.eval(node.value, env); if(node.op===AetherTT.NOT||node.op==='!') return !v; if(node.op===AetherTT.MINUS||node.op==='-') return -Number(v); return v; }
+      case 'bin': {
+        const l=this.eval(node.left, env), r=this.eval(node.right, env);
+        const op=node.op;
+        if(op==='+'||op===AetherTT.PLUS) return (typeof l==='string'||typeof r==='string') ? (String(l)+String(r)) : (Number(l)+Number(r));
+        if(op==='-'||op===AetherTT.MINUS) return Number(l)-Number(r);
+        if(op==='*'||op===AetherTT.STAR) return Number(l)*Number(r);
+        if(op==='/'||op===AetherTT.SLASH) return Number(l)/Number(r);
+        if(op==='%'||op===AetherTT.PCT) return Number(l)%Number(r);
+        if(op==='=='||op===AetherTT.EQEQ) return l===r;
+        if(op==='!='||op===AetherTT.NEQ) return l!==r;
+        if(op==='<'||op===AetherTT.LT) return l<r;
+        if(op==='>'||op===AetherTT.GT) return l>r;
+        if(op==='<='||op===AetherTT.LTE) return l<=r;
+        if(op==='>='||op===AetherTT.GTE) return l>=r;
+        if(op==='&&'||op===AetherTT.AND) return l&&r;
+        if(op==='||'||op===AetherTT.OR) return l||r;
+        return null;
+      }
+      case 'call': { const fn=this.eval(node.callee, env); if(typeof fn!=='function') throw new Error('Not a function'); return fn(...node.args.map(a=>this.eval(a, env))); }
+      case 'index': { const o=this.eval(node.object, env), i=this.eval(node.index, env); return o!=null ? o[i] : null; }
+      case 'prop': { const o=this.eval(node.object, env); return o!=null ? o[node.name] : null; }
+      default: return null;
+    }
+  }
+}
+
+function runAether(code, printFn){
+  const rt = new AetherRT(printFn);
+  return rt.run(code);
+}
+
+const AETHER_EXAMPLES = [
+  { title: 'KOS graph', desc: 'Knowledge nodes and links', code: "print(kos_status())\nlet a = kos_add(\"Light Speed\", \"process\", \"Virtual cache O(0)\", \"perf\", 0.8)\nprint(a)\nprint(kos_query(\"light\", 5))\nprint(kos_verify(a.id, \"demo\", 0.9))\n" },
+  { title: 'Light Speed', desc: 'Virtual instant cache', code: "ls_learn(\"7*7\", 49)\nprint(ls_recall(\"7*7\"))\nprint(ls_run(\"print(40+2)\"))\nprint(ls_status())\n" },
+  { title: 'Ultimate Oracle', desc: 'Best answer across systems', code: "print(ultimate_ask(\"what is Heart\"))\nprint(ultimate_ask(\"Pixel Codec\"))\nprint(ultimate_status())\n" },
+  { title: 'Brain & Heart', desc: 'Independent mind + runtime', code: "print(brain_plan(\"build tool\"))\nprint(brain_learn(\"tests before ship\"))\nprint(brain_reflect())\nprint(heart_beat())\nprint(heart_run(\"print(2+2)\"))\nprint(heart_status())\nprint(oracle_predict(3))\n" },
+  { title: 'Pixel round-trip', desc: 'Anything to pixels and back', code: "let e = pixel_encode(\"fn hello(){}\", \"aether\")\nprint(e)\nlet d = pixel_decode(e.path)\nprint(d.type)\nprint(d.value)\nlet a = pixel_store_app({name:\"demo\",v:1})\nprint(a)\nprint(pixel_list())\nos_open(\"pixels\")\n" },
+  { title: 'Hello Æther', desc: 'Variables & print', code: `# Hello Æther OS\nprint("Welcome to Æther OS")\nlet name = "operator"\nprint("Hello,", name)\nprint("2 + 2 =", 2 + 2)\n` },
+  { title: 'Functions & loops', desc: 'fn, for, while', code: `fn fact(n) {\n  if n <= 1 { return 1 }\n  return n * fact(n - 1)\n}\nprint("10! =", fact(10))\nfor x in range(1, 6) { print("square", x, "=", x * x) }\n` },
+  { title: 'Unit tests', desc: 'assert / test_eq', code: `fn add(a, b) { return a + b }\nfn clamp(x, lo, hi) {\n  if x < lo { return lo }\n  if x > hi { return hi }\n  return x\n}\ntest_eq(add(2, 3), 5, "add")\ntest_eq(clamp(150, 0, 100), 100, "clamp")\nassert(true, "ok")\nprint("All tests passed")\n` },
+  { title: 'File search', desc: 'Find files by path or content', code: `fs_write("/docs/readme.txt", "Aether OS file search demo")\nfs_write("/docs/notes.md", "# Notes\\n- search works\\n- find me")\nprint("Searching for 'search':")\nprint(fs_search("search"))\nprint("Searching for 'readme':")\nprint(fs_search("readme"))\n` },
+  { title: 'Notifications', desc: 'os_notify API', code: `os_notify("Hello from Aether!", "info", "Greeting")\nos_notify("This is a warning", "warn", "Alert")\nos_notify("All systems go", "success", "Status")\nprint("Check Notifications app")\nos_open("notifications")\n` },
+  { title: 'Theme switcher', desc: 'Toggle dark/light', code: `print("Current theme:", S.theme)\ntoggleTheme()\nprint("Theme toggled")\n` },
+  { title: 'ASI agent', desc: 'asi_run uses language heart', code: `print(asi_status())\nprint(asi_run("check health"))\n` },
+  { title: 'LLM helper', desc: 'Offline llm_ask', code: `print(llm_ask("how do I save a file?"))\nprint("---")\nprint(llm_ask("generate image"))\nprint("---")\nprint(llm_ask("create app"))\nos_open("chat")\n` },
+];
+
+// ===================================================================
+//  Æther OS Core
+// ===================================================================
+const AETHER_OS_CORE = `
+# Æther OS Core — brain, heart, oracle (language-level)
+print("Æther OS Core loading...")
+fn brain_think(topic) { print("brain:", topic); return topic }
+fn heart_pulse() { print("heart: pulse"); return 1 }
+fn oracle_ask(q) { print("oracle:", q); return q }
+fn boot_banner() {
+  print("=================================")
+  print("  ÆTHER OS — ASI / VHW Oracle")
+  print("  Brain  = independent mind VHW")
+  print("  Heart  = Aether language runtime")
+  print("  Oracle = VHW predictive fabric")
+  print("=================================")
+  return 0
+}
+boot_banner()
+`;
+
+function bootAetherCore(printFn) {
+  try { return Heart.runLanguage(AETHER_OS_CORE, printFn || function(){}); }
+  catch (e) { try { return runAether(AETHER_OS_CORE, printFn || function(){}); } catch (e2) { return e2.message; } }
+}
+
+// ===================================================================
+//  VHW — Virtual Hardware
+// ===================================================================
+const VHW = {
+  components: ['vCPU','vGPU','vTPU','vNPU','vQPU','vPPU','vLPU','vRAM','vVRAM','vCache','vStorage','vNet','vPhoton','vFabric','vBus','vReason','vMemory','vAttention','vPlan','vLearn','vReflect','vEncoder','vDecoder','vScheduler','vSecurity','vThermals'],
+  mindKeys: ['vReason','vMemory','vAttention','vPlan','vLearn','vReflect'],
+  computeKeys: ['vCPU','vGPU','vTPU','vNPU','vQPU','vPPU','vLPU'],
+  ensure() { if (typeof S === 'undefined' || !S.vhw) return null; return S.vhw; },
+  tick() {
+    const v = this.ensure(); if (!v) return null;
+    for (const k of this.components) { if (typeof v[k] !== 'number') v[k] = 10; const drift = (Math.random() - 0.48) * 6; v[k] = Math.max(1, Math.min(99, v[k] + drift)); }
+    try {
+      if (typeof AetherASI !== 'undefined' && AetherASI.stats) {
+        const st = AetherASI.stats;
+        v.vReason = Math.min(99, 8 + (st.reason || 0) * 3 + Math.random() * 5);
+        v.vPlan = Math.min(99, 6 + (st.plan || 0) * 4 + Math.random() * 4);
+        v.vLearn = Math.min(99, 5 + (st.learn || 0) * 5 + Math.random() * 4);
+        v.vReflect = Math.min(99, 5 + (st.reflect || 0) * 4 + Math.random() * 3);
+        v.vAttention = Math.min(99, 10 + (AetherASI.memory ? AetherASI.memory.length : 0) * 1.2);
+        v.vMemory = Math.min(99, 12 + (AetherASI.knowledge ? AetherASI.knowledge.length : 0) * 2);
+      }
+    } catch (e) {}
+    try {
+      if (S.hardware) { S.hardware.cpu.load = v.vCPU; S.hardware.cpu.temp = 35 + v.vThermals * 0.4;
+        S.hardware.ram.used = (v.vRAM / 100) * S.hardware.ram.total; S.hardware.ram.free = S.hardware.ram.total - S.hardware.ram.used;
+        S.hardware.storage.used = (v.vStorage / 100) * S.hardware.storage.total; S.hardware.storage.free = S.hardware.storage.total - S.hardware.storage.used; }
+    } catch (e) {}
+    v.computeLoad = this._avg(this.computeKeys.map(k => v[k]));
+    v.mindLoad = this._avg(this.mindKeys.map(k => v[k]));
+    v.fabricHealth = Math.max(0, 100 - (v.vThermals * 0.3 + v.computeLoad * 0.2));
+    v.powerDraw = Math.round(v.computeLoad * 1.8 + v.mindLoad * 0.9 + v.vGPU * 0.5);
+    return this.snapshot();
+  },
+  _avg(arr) { if (!arr.length) return 0; return Math.round(arr.reduce((a, b) => a + b, 0) / arr.length); },
+  snapshot() {
+    const v = this.ensure(); if (!v) return {};
+    const pack = (keys) => { const o = {}; for (const k of keys) o[k] = Math.round(v[k]); return o; };
+    return {
+      compute: pack(this.computeKeys), mind: pack(this.mindKeys),
+      memory: pack(['vRAM','vVRAM','vCache','vStorage']),
+      fabric: pack(['vFabric','vBus','vNet','vPhoton']),
+      support: pack(['vEncoder','vDecoder','vScheduler','vSecurity','vThermals']),
+      aggregates: { computeLoad: v.computeLoad, mindLoad: v.mindLoad, fabricHealth: Math.round(v.fabricHealth), powerDraw: v.powerDraw }
+    };
+  },
+  pulse(unit, amount) {
+    const v = this.ensure(); if (!v || typeof v[unit] !== 'number') return false;
+    v[unit] = Math.max(1, Math.min(99, v[unit] + (Number(amount) || 10)));
+    if (!S.vhwLog) S.vhwLog = [];
+    S.vhwLog.push({ t: Date.now(), unit: unit, amount: amount, v: v[unit] });
+    if (S.vhwLog.length > 80) S.vhwLog.shift();
+    return v[unit];
+  },
+  attend(task) {
+    const v = this.ensure(); if (!v) return null;
+    this.pulse('vAttention', 12); this.pulse('vReason', 8); this.pulse('vPlan', 6);
+    this.pulse('vCPU', 5); this.pulse('vNPU', 7);
+    if (!S.vhwLog) S.vhwLog = [];
+    S.vhwLog.push({ t: Date.now(), unit: 'attend', task: String(task || ''), mindLoad: v.mindLoad });
+    return { task: task, mind: this.snapshot().mind, computeLoad: v.computeLoad };
+  },
+  compute(ops) {
+    const n = Math.min(5e6, Math.max(1000, Number(ops) || 100000));
+    const t0 = performance.now();
+    let x = 0;
+    for (let i = 0; i < n; i++) x = Math.sin(i * 0.001) + x * 0.0000001;
+    const ms = performance.now() - t0;
+    this.pulse('vCPU', 15); this.pulse('vGPU', 8); this.pulse('vRAM', 5);
+    return { ops: n, ms: Math.round(ms * 100) / 100, checksum: Math.round(x * 1e6) / 1e6, load: this.snapshot().aggregates };
+  },
+  all() { return this.snapshot(); },
+  log(n) { return (S.vhwLog || []).slice(-(n || 20)); }
+};
+setInterval(function(){ try { VHW.tick(); if (window._vhwTick) window._vhwTick(); } catch(e) {} }, 1500);
+
+// ===================================================================
+//  VHW Oracle
+// ===================================================================
+const VHWOracle = {
+  query(q) { if (typeof S !== 'undefined' && S.oracle) S.oracle.queries++; VHW.tick(); const snap = VHW.snapshot(); const s = String(q||'').toLowerCase(); let answer = null;
+    if (/mind|brain|reason|attention/.test(s)) answer = { domain: 'mind', data: snap.mind, load: snap.aggregates.mindLoad };
+    else if (/compute|cpu|gpu|tpu|qpu/.test(s)) answer = { domain: 'compute', data: snap.compute, load: snap.aggregates.computeLoad };
+    else if (/health|fabric|power|thermal/.test(s)) answer = { domain: 'health', data: snap.aggregates, support: snap.support };
+    else if (/memory|ram|storage|cache/.test(s)) answer = { domain: 'memory', data: snap.memory };
+    else answer = { domain: 'full', data: snap };
+    if (typeof S !== 'undefined' && S.oracle) S.oracle.lastAnswer = answer;
+    return answer;
+  },
+  predict(horizon) { VHW.tick(); const snap = VHW.snapshot(); const h = Math.max(1, Number(horizon)||3);
+    const pred = { steps: h, computeLoad: [], mindLoad: [], risk: 'low' };
+    let c = snap.aggregates.computeLoad, m = snap.aggregates.mindLoad;
+    for (let i = 0; i < h; i++) { c = Math.max(5, Math.min(95, c + (Math.random()-0.45)*8)); m = Math.max(5, Math.min(95, m + (Math.random()-0.45)*6)); pred.computeLoad.push(Math.round(c)); pred.mindLoad.push(Math.round(m)); }
+    const peak = Math.max(...pred.computeLoad, ...pred.mindLoad); pred.risk = peak > 85 ? 'high' : (peak > 65 ? 'medium' : 'low');
+    if (typeof S !== 'undefined' && S.oracle) { S.oracle.predictions.push({ t: Date.now(), pred }); if (S.oracle.predictions.length > 20) S.oracle.predictions.shift(); }
+    return pred;
+  },
+  amplify(unit, factor) { const f = Math.max(1, Math.min(5, Number(factor)||2)); VHW.pulse(unit || 'vCPU', 10 * f); VHW.pulse('vAttention', 5 * f); return VHW.snapshot(); },
+  teach(fact) { if (typeof S === 'undefined') return false; if (!S.oracle.knowledge) S.oracle.knowledge = []; const f = String(fact||'').trim(); if (f && !S.oracle.knowledge.includes(f)) S.oracle.knowledge.push(f); return S.oracle.knowledge.length; },
+  status() { return { role: 'VHW Oracle', queries: (typeof S !== 'undefined' && S.oracle) ? S.oracle.queries : 0, knowledge: (typeof S !== 'undefined' && S.oracle) ? (S.oracle.knowledge||[]).length : 0, last: (typeof S !== 'undefined' && S.oracle) ? S.oracle.lastAnswer : null, fabric: VHW.snapshot().aggregates }; }
+};
+
+// ===================================================================
+//  BRAIN
+// ===================================================================
+const Brain = {
+  MODES: ['awake', 'thinking', 'planning', 'learning', 'reflecting', 'idle', 'dream'],
+  think(topic) { if (typeof S === 'undefined' || !S.brain) return null;
+    S.brain.mode = 'thinking'; S.brain.cycles = (S.brain.cycles || 0) + 1;
+    const b = S.brain.vhw; b.attention = Math.min(99, b.attention + 8 + Math.random() * 4);
+    b.reason = Math.min(99, b.reason + 10 + Math.random() * 3); b.plan = Math.min(99, b.plan + 4);
+    b.load = Math.round((b.reason + b.attention + b.plan + b.memory + b.learn + b.reflect) / 6);
+    try { VHW.pulse('vReason', 6); VHW.pulse('vAttention', 5); VHW.pulse('vNPU', 3); } catch (e) {}
+    const topicS = String(topic || 'idle'); S.brain.focus = topicS;
+    const thought = { t: Date.now(), topic: topicS, load: b.load, cycle: S.brain.cycles, note: 'reasoned: ' + topicS.slice(0, 120) };
+    S.brain.thoughts.push(thought); if (S.brain.thoughts.length > 60) S.brain.thoughts.shift();
+    S.brain.mode = 'awake'; return thought;
+  },
+  plan(goal) { if (!S.brain) return null; S.brain.mode = 'planning'; const g = String(goal || '');
+    S.brain.vhw.plan = Math.min(99, S.brain.vhw.plan + 12); S.brain.vhw.reason = Math.min(99, S.brain.vhw.reason + 6);
+    try { VHW.pulse('vPlan', 8); } catch (e) {}
+    const steps = []; const low = g.toLowerCase();
+    if (/image|draw|pixel/.test(low)) steps.push('use pixel/image tools', 'verify output');
+    else if (/file|save|fs/.test(low)) steps.push('write HyperFS', 'list paths', 'confirm');
+    else if (/test|assert/.test(low)) steps.push('run unit checks', 'report');
+    else if (/app|scaffold/.test(low)) steps.push('scaffold app', 'test', 'run');
+    else if (/notif|notification/.test(low)) steps.push('send notification', 'log');
+    else if (/search|find/.test(low)) steps.push('search files', 'display results');
+    else steps.push('analyze goal', 'select tools', 'execute', 'reflect');
+    const plan = { t: Date.now(), goal: g, steps: steps };
+    S.brain.episodes.push({ kind: 'plan', plan: plan });
+    if (S.brain.episodes.length > 40) S.brain.episodes.shift();
+    this.setGoal(g); S.brain.mode = 'awake'; return plan;
+  },
+  learn(fact) { if (!S.brain) return null; S.brain.mode = 'learning'; const f = String(fact || '').trim();
+    if (!f) return null; S.brain.vhw.learn = Math.min(99, S.brain.vhw.learn + 10);
+    S.brain.vhw.memory = Math.min(99, S.brain.vhw.memory + 6);
+    try { VHW.pulse('vLearn', 7); VHW.pulse('vMemory', 5); } catch (e) {}
+    if (!S.brain.beliefs.includes(f)) S.brain.beliefs.push(f);
+    if (S.brain.beliefs.length > 100) S.brain.beliefs.shift();
+    try { if (typeof AetherASI !== 'undefined') AetherASI.learn(f); } catch (e) {}
+    try { if (typeof VHWOracle !== 'undefined') VHWOracle.teach(f); } catch (e) {}
+    S.brain.mode = 'awake'; return { learned: f, beliefs: S.brain.beliefs.length };
+  },
+  reflect() { if (!S.brain) return null; S.brain.mode = 'reflecting';
+    S.brain.vhw.reflect = Math.min(99, S.brain.vhw.reflect + 10);
+    try { VHW.pulse('vReflect', 6); } catch (e) {}
+    const report = { t: Date.now(), mode: 'reflect', cycles: S.brain.cycles, thoughts: (S.brain.thoughts || []).length,
+      goals: (S.brain.goals || []).length, beliefs: (S.brain.beliefs || []).length, focus: S.brain.focus,
+      vhw: Object.assign({}, S.brain.vhw), lastThoughts: (S.brain.thoughts || []).slice(-3) };
+    S.brain.episodes.push({ kind: 'reflect', report: report }); S.brain.mode = 'awake'; return report;
+  },
+  setGoal(g) { if (!S.brain) return null; S.brain.goals.push({ g: String(g), t: Date.now(), done: false });
+    if (S.brain.goals.length > 30) S.brain.goals.shift(); this.think('goal:' + g); return S.brain.goals.length;
+  },
+  completeGoal(idx) { if (!S.brain || !S.brain.goals[idx]) return false; S.brain.goals[idx].done = true; return true; },
+  dream() { if (!S.brain) return null; S.brain.mode = 'dream';
+    const seeds = (S.brain.beliefs || []).concat((S.brain.thoughts || []).map(t => t.topic));
+    const pick = seeds.length ? seeds[Math.floor(Math.random() * seeds.length)] : 'void';
+    const dream = { t: Date.now(), motif: String(pick).slice(0, 80), note: 'consolidation pass' };
+    S.brain.vhw.memory = Math.min(99, S.brain.vhw.memory + 3);
+    S.brain.episodes.push({ kind: 'dream', dream: dream }); S.brain.mode = 'idle'; return dream;
+  },
+  snapshot() { if (!S.brain) return {};
+    return { independent: true, system: 'Brain', mode: S.brain.mode, active: S.brain.active,
+      cycles: S.brain.cycles || 0, focus: S.brain.focus, vhw: Object.assign({}, S.brain.vhw),
+      thoughts: (S.brain.thoughts || []).slice(-8), goals: (S.brain.goals || []).slice(-8),
+      beliefs: (S.brain.beliefs || []).slice(-12), episodes: (S.brain.episodes || []).length };
+  },
+  status() { return this.snapshot(); }
+};
+
+// ===================================================================
+//  HEART
+// ===================================================================
+const Heart = {
+  beat() { if (typeof S === 'undefined' || !S.heart) return null; S.heart.beat++;
+    const h = S.heart.vhw; h.pulse = Math.min(99, 8 + (S.heart.beat % 24) + Math.random() * 3);
+    h.runtime = Math.min(99, Math.max(5, h.runtime + (Math.random() - 0.3) * 4));
+    h.energy = Math.max(15, Math.min(100, S.heart.energy + (Math.random() - 0.42) * 5));
+    S.heart.energy = h.energy; h.bus = Math.min(99, h.bus + Math.random() * 2);
+    h.load = Math.round((h.pulse + h.runtime + h.gate + h.bus) / 4);
+    try { VHW.pulse('vBus', 2); VHW.pulse('vScheduler', 2); } catch (e) {}
+    return { beat: S.heart.beat, energy: h.energy, load: h.load, tempo: S.heart.tempo };
+  },
+  runLanguage(src, printFn) { if (!S.heart) return null; this.beat(); S.heart.languageRuns++;
+    S.heart.lastSrc = String(src || '').slice(0, 200); S.heart.vhw.gate = Math.min(99, S.heart.vhw.gate + 12);
+    S.heart.vhw.runtime = Math.min(99, S.heart.vhw.runtime + 10);
+    try { VHW.pulse('vCPU', 6); VHW.pulse('vRAM', 3); } catch (e) {}
+    const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+    try { const result = runAether(String(src || ''), printFn); S.heart.lastMs = ((typeof performance !== 'undefined') ? performance.now() : Date.now()) - t0; S.heart.energy = Math.max(15, S.heart.energy - 1); return result; }
+    catch (e) { S.heart.errors = (S.heart.errors || 0) + 1; S.heart.lastMs = ((typeof performance !== 'undefined') ? performance.now() : Date.now()) - t0; throw e; }
+  },
+  recover() { if (!S.heart) return null; S.heart.energy = Math.min(100, S.heart.energy + 15);
+    S.heart.vhw.energy = S.heart.energy; S.heart.vhw.gate = Math.max(5, S.heart.vhw.gate - 5);
+    this.beat(); return this.snapshot();
+  },
+  setTempo(bpm) { if (!S.heart) return null; S.heart.tempo = Math.max(30, Math.min(180, Number(bpm) || 60)); return S.heart.tempo; },
+  snapshot() { if (!S.heart) return {};
+    return { independent: true, system: 'Heart', active: S.heart.active, beat: S.heart.beat, tempo: S.heart.tempo,
+      energy: S.heart.energy, languageRuns: S.heart.languageRuns, lastMs: S.heart.lastMs || 0, errors: S.heart.errors || 0,
+      lastSrc: S.heart.lastSrc, vhw: Object.assign({}, S.heart.vhw) };
+  },
+  status() { return this.snapshot(); }
+};
+setInterval(function(){ try { Heart.beat(); } catch(e){} }, 2000);
+
+// ===================================================================
+//  KOS
+// ===================================================================
+const KOS = {
+  version: '9.1-os', nodes: new Map(), edges: [], agents: [], journal: [], _id: 0,
+  _nid() { return 'n' + (++this._id) + '_' + Date.now().toString(36); },
+  add(title, type, body, tags, conf) {
+    const id = this._nid(); const node = { id, title: String(title || 'untitled'), type: String(type || 'concept'),
+      body: String(body || ''), tags: Array.isArray(tags) ? tags : String(tags || '').split(',').map(t => t.trim()).filter(Boolean),
+      conf: Math.max(0, Math.min(1, Number(conf) || 0.5)), status: 'proposed', created_at: Date.now(), updated_at: Date.now() };
+    this.nodes.set(id, node); this._journal('add', id, node.title); this._persist(); return node;
+  },
+  link(from, to, type, conf) { if (!this.nodes.has(from) || !this.nodes.has(to)) throw new Error('KOS: node not found');
+    const edge = { id: 'e' + this.edges.length + '_' + Date.now().toString(36), from: from, to: to, type: String(type || 'related_to'),
+      conf: Math.max(0, Math.min(1, Number(conf) || 0.5)), t: Date.now() };
+    this.edges.push(edge); this._journal('link', from, to + ':' + edge.type); this._persist(); return edge;
+  },
+  get(id) { return this.nodes.get(id) || null; },
+  query(terms, limit) { const q = String(terms || '').toLowerCase().split(/\s+/).filter(Boolean); const lim = Math.min(50, Number(limit) || 20);
+    const out = []; for (const n of this.nodes.values()) { const hay = (n.title + ' ' + n.body + ' ' + (n.tags || []).join(' ') + ' ' + n.type).toLowerCase();
+      const score = q.reduce((s, w) => s + (hay.indexOf(w) >= 0 ? 1 : 0), 0); if (!q.length || score > 0) out.push({ score: score, node: n }); }
+    out.sort((a, b) => b.score - a.score || b.node.updated_at - a.node.updated_at); return out.slice(0, lim).map(x => x.node);
+  },
+  verify(id, by, conf) { const n = this.nodes.get(id); if (!n) throw new Error('KOS: not found'); n.status = 'verified';
+    n.conf = Math.max(n.conf, Number(conf) || 0.8); n.updated_at = Date.now(); n.verified_by = String(by || 'system');
+    this._journal('verify', id, n.verified_by); this._persist(); return n;
+  },
+  challenge(id, by, note) { const n = this.nodes.get(id); if (!n) throw new Error('KOS: not found'); n.status = 'challenged';
+    n.challenge_note = String(note || ''); n.challenged_by = String(by || 'system'); n.updated_at = Date.now();
+    this._journal('challenge', id, note); this._persist(); return n;
+  },
+  remove(id) { if (!this.nodes.has(id)) return false; this.nodes.delete(id); this.edges = this.edges.filter(e => e.from !== id && e.to !== id);
+    this._journal('delete', id, ''); this._persist(); return true;
+  },
+  trace(id, depth) { const d = Math.min(4, Number(depth) || 1); const seen = new Set([id]); let frontier = [id]; const edges = [];
+    for (let i = 0; i < d; i++) { const next = []; for (const fid of frontier) { for (const e of this.edges) {
+      if (e.from === fid && !seen.has(e.to)) { seen.add(e.to); next.push(e.to); edges.push(e); }
+      if (e.to === fid && !seen.has(e.from)) { seen.add(e.from); next.push(e.from); edges.push(e); } } } frontier = next; }
+    return { id: id, nodes: Array.from(seen).map(x => this.nodes.get(x)).filter(Boolean), edges: edges };
+  },
+  registerAgent(type, role) { const a = { id: 'agent_' + this.agents.length, type: String(type || 'worker'), role: String(role || 'general'),
+      active: true, contribution: 0, skills: [], intent: 'idle' }; this.agents.push(a); return a; },
+  status() { const verified = Array.from(this.nodes.values()).filter(n => n.status === 'verified').length; const total = this.nodes.size || 1;
+    return { version: this.version, nodes: this.nodes.size, edges: this.edges.length, agents: this.agents.length,
+      consistency: Math.round((verified / total) * 100), journal: this.journal.length };
+  },
+  backup() { return { version: this.version, nodes: Array.from(this.nodes.values()), edges: this.edges.slice(), agents: this.agents.slice(), t: Date.now() }; },
+  restore(data, replace) { if (!data) return false; if (replace) { this.nodes.clear(); this.edges = []; }
+    (data.nodes || []).forEach(n => { if (n && n.id) this.nodes.set(n.id, n); }); if (Array.isArray(data.edges)) this.edges = replace ? data.edges.slice() : this.edges.concat(data.edges);
+    this._persist(); return this.status();
+  },
+  _journal(op, target, detail) { this.journal.push({ id: this.journal.length + 1, operation: op, target: target, detail: String(detail || ''), actor: 'system', timestamp: Date.now(), checksum: (op + target).length });
+    if (this.journal.length > 200) this.journal.shift(); },
+  _persist() { try { if (typeof S === 'undefined') return; S.fs.set('/kos/graph.json', JSON.stringify(this.backup())); if (typeof saveState === 'function') saveState(); } catch (e) {} },
+  load() { try { if (typeof S !== 'undefined' && S.fs.has('/kos/graph.json')) { const d = JSON.parse(S.fs.get('/kos/graph.json')); this.restore(d, true); } } catch (e) {} }
+};
+(function seedKOS() {
+  try { if (KOS.nodes.size) return;
+    const a = KOS.add('Æther Language', 'concept', 'Core programming language of Æther OS', ['language', 'heart'], 0.9);
+    const b = KOS.add('Brain', 'entity', 'Independent logical mind system', ['mind', 'asi'], 0.85);
+    const c = KOS.add('Heart', 'entity', 'Aether language runtime pulse', ['runtime', 'heart'], 0.9);
+    const d = KOS.add('VHW Oracle', 'entity', 'Virtual hardware predictive fabric', ['vhw', 'oracle'], 0.85);
+    const e = KOS.add('Pixel Codec', 'process', 'Round-trip encode anything to pixels', ['pixel', 'storage'], 0.8);
+    const f = KOS.add('Notifications', 'system', 'Notification center with history', ['ui', 'system'], 0.8);
+    KOS.link(a.id, c.id, 'powers', 0.9); KOS.link(b.id, a.id, 'uses', 0.8); KOS.link(d.id, e.id, 'related_to', 0.7);
+    KOS.verify(a.id, 'boot', 0.95); KOS.registerAgent('oracle', 'knowledge'); KOS.registerAgent('asi', 'planner');
+  } catch (e) {}
+})();
+
+// ===================================================================
+//  LIGHT SPEED
+// ===================================================================
+const LightSpeed = {
+  cache: new Map(), hits: 0, misses: 0,
+  learn(expr, value) { this.cache.set(String(expr).trim(), value); return value; },
+  recall(expr) { const key = String(expr).trim(); if (this.cache.has(key)) { this.hits++; return { hit: true, value: this.cache.get(key), ms: 0 }; } this.misses++; return { hit: false, value: undefined, ms: 0 }; },
+  run(src, printFn) { const key = String(src || '').trim(); const r = this.recall(key); if (r.hit) { if (printFn) printFn('⚡ light-speed hit: ' + String(r.value)); return { result: r.value, virtual: true, ms: 0 }; }
+    const t0 = (typeof performance !== 'undefined') ? performance.now() : Date.now(); let result;
+    try { if (typeof Heart !== 'undefined' && Heart.runLanguage) result = Heart.runLanguage(key, printFn); else result = runAether(key, printFn); }
+    catch (e) { return { result: null, error: e.message, virtual: false }; }
+    const ms = ((typeof performance !== 'undefined') ? performance.now() : Date.now()) - t0;
+    if (result !== undefined && result !== null) this.learn(key, result);
+    return { result: result, virtual: false, ms: Math.round(ms * 100) / 100 };
+  },
+  status() { return { entries: this.cache.size, hits: this.hits, misses: this.misses, hitRate: (this.hits + this.misses) ? Math.round(100 * this.hits / (this.hits + this.misses)) : 0 }; }
+};
+(function () { LightSpeed.learn('2 + 2', 4); LightSpeed.learn('1 + 1', 2); })();
+
+// ===================================================================
+//  ULTIMATE ORACLE
+// ===================================================================
+const UltimateOracle = {
+  ask(query) {
+    const q = String(query || '').trim(); const low = q.toLowerCase(); const candidates = [];
+    try { const nodes = KOS.query(q, 5); nodes.forEach(n => candidates.push({ kind: 'kos', score: 0.5 + (n.conf || 0.3) * 0.4 + (n.status === 'verified' ? 0.15 : 0), text: n.title + (n.body ? ': ' + n.body : ''), id: n.id })); } catch (e) {}
+    try { const vo = VHWOracle.query(q); if (vo) candidates.push({ kind: 'vhw', score: 0.55, text: 'VHW ' + vo.domain + ' → ' + JSON.stringify(vo.data).slice(0, 200) }); } catch (e) {}
+    try { if (typeof AetherASI !== 'undefined' && AetherASI.knowledge) { AetherASI.knowledge.filter(k => low.split(/\s+/).some(w => w.length > 2 && String(k).toLowerCase().indexOf(w) >= 0)).slice(0, 3).forEach(k => candidates.push({ kind: 'asi', score: 0.45, text: String(k) })); } } catch (e) {}
+    try { if (typeof S !== 'undefined' && S.oracle && S.oracle.knowledge) { S.oracle.knowledge.filter(k => low.split(/\s+/).some(w => w.length > 2 && String(k).toLowerCase().indexOf(w) >= 0)).forEach(k => candidates.push({ kind: 'oracle', score: 0.4, text: String(k) })); } } catch (e) {}
+    candidates.sort((a, b) => b.score - a.score); const best = candidates[0] || null;
+    const answer = { ok: !!best, query: q, picked: best ? best.kind : null, score: best ? best.score : 0, text: best ? best.text : 'No grounded answer above threshold — try kos_add or brain_learn.', candidates: candidates.slice(0, 5) };
+    try { if (typeof S !== 'undefined' && S.oracle) { S.oracle.queries++; S.oracle.lastAnswer = answer; } } catch (e) {}
+    return answer;
+  },
+  status() { return { kos: KOS.status(), lightspeed: LightSpeed.status(), vhw: (typeof VHWOracle !== 'undefined') ? VHWOracle.status() : null }; }
+};
+
+// ===================================================================
+//  PIXEL CODEC
+// ===================================================================
+const PixelCodec = {
+  MAGIC: 'AEPX', VERSION: 1,
+  T: { text: 1, json: 2, image: 3, binary: 4, aether: 5, app: 6, os: 7, llm: 8, engine: 9, machine: 10, video: 11 },
+  _bytesFromStr(s) { return Array.from(new TextEncoder().encode(String(s))); },
+  _strFromBytes(arr) { return new TextDecoder().decode(new Uint8Array(arr)); },
+  _pack(typeCode, payloadBytes) {
+    const mag = [0x41,0x45,0x50,0x58]; const ver = [this.VERSION]; const typ = [typeCode & 255];
+    const len = payloadBytes.length; const lenb = [(len>>>24)&255,(len>>>16)&255,(len>>>8)&255,len&255];
+    return mag.concat(ver, typ, lenb, payloadBytes);
+  },
+  _unpack(bytes) { if (!bytes || bytes.length < 10) throw new Error('pixel: truncated');
+    if (bytes[0]!==0x41||bytes[1]!==0x45||bytes[2]!==0x50||bytes[3]!==0x58) throw new Error('pixel: bad magic');
+    const ver = bytes[4], typ = bytes[5]; const len = (bytes[6]<<24)|(bytes[7]<<16)|(bytes[8]<<8)|bytes[9];
+    const payload = bytes.slice(10, 10+len); if (payload.length < len) throw new Error('pixel: length mismatch');
+    return { version: ver, type: typ, payload: payload };
+  },
+  bytesToPixel(bytes) {
+    const arr = bytes instanceof Array ? bytes : Array.from(bytes);
+    const nPix = Math.ceil(arr.length / 3); const side = Math.ceil(Math.sqrt(nPix));
+    const w = side; const h = Math.max(1, Math.ceil(nPix / side));
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d'); const img = ctx.createImageData(w, h); const d = img.data;
+    let bi = 0; for (let i = 0; i < w*h; i++) { const o = i*4; d[o] = bi < arr.length ? arr[bi++] : 0; d[o+1] = bi < arr.length ? arr[bi++] : 0; d[o+2] = bi < arr.length ? arr[bi++] : 0; d[o+3] = 255; }
+    ctx.putImageData(img, 0, 0); return { width: w, height: h, bytes: arr.length, dataUrl: canvas.toDataURL('image/png'), canvas: canvas };
+  },
+  encode(value, typeHint, path) {
+    let typeCode = this.T.text; let payloadBytes; let meta = { typeHint: typeHint || 'text' }; const th = typeHint || 'text';
+    if (th === 'image' && typeof value === 'string' && value.indexOf('data:image') === 0) { typeCode = this.T.image; payloadBytes = this._bytesFromStr(value); meta.kind = 'image-dataurl'; }
+    else if (th === 'json' || th === 'app' || th === 'os' || th === 'llm' || th === 'engine' || th === 'machine' || (value && typeof value === 'object' && th !== 'text')) {
+      typeCode = this.T[th] || this.T.json; const json = typeof value === 'string' ? value : JSON.stringify(value); payloadBytes = this._bytesFromStr(json); meta.kind = th || 'json';
+    } else if (th === 'aether' || th === 'code') { typeCode = this.T.aether; payloadBytes = this._bytesFromStr(String(value)); meta.kind = 'aether'; }
+    else if (th === 'video') { typeCode = this.T.video; const json = typeof value === 'string' ? value : JSON.stringify(value); payloadBytes = this._bytesFromStr(json); meta.kind = 'video'; }
+    else if (th === 'binary' && (value instanceof Array || (typeof Uint8Array !== 'undefined' && value instanceof Uint8Array))) { typeCode = this.T.binary; payloadBytes = Array.from(value); meta.kind = 'binary'; }
+    else { typeCode = this.T.text; payloadBytes = this._bytesFromStr(String(value)); meta.kind = 'text'; }
+    const packed = this._pack(typeCode, payloadBytes); const pix = this.bytesToPixel(packed);
+    meta.width = pix.width; meta.height = pix.height; meta.bytes = packed.length; meta.typeCode = typeCode; meta.ts = Date.now();
+    let b64 = ''; try { const u8 = new Uint8Array(packed); let s = ''; const chunk = 0x8000; for (let i = 0; i < u8.length; i += chunk) s += String.fromCharCode.apply(null, u8.subarray(i, Math.min(i+chunk, u8.length))); b64 = btoa(s); } catch (e) { b64 = ''; }
+    const record = { magic: this.MAGIC, version: this.VERSION, meta: meta, dataUrl: pix.dataUrl, raw: b64 };
+    const storePath = path || ('/pixels/px_' + Date.now() + '.aepx');
+    if (typeof S !== 'undefined') { S.fs.set(storePath, JSON.stringify(record)); if (typeof saveState === 'function') saveState(); }
+    return { path: storePath, width: pix.width, height: pix.height, bytes: packed.length, type: meta.kind, dataUrl: pix.dataUrl };
+  },
+  decode(pathOrRecord) {
+    let record = pathOrRecord; if (typeof pathOrRecord === 'string') { if (typeof S === 'undefined' || !S.fs.has(pathOrRecord)) throw new Error('pixel: not found ' + pathOrRecord); record = JSON.parse(S.fs.get(pathOrRecord)); }
+    if (!record || !record.raw) throw new Error('pixel: invalid record');
+    const bin = atob(record.raw); const bytes = new Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const u = this._unpack(bytes); let typeName = 'text'; for (const k of Object.keys(this.T)) if (this.T[k] === u.type) typeName = k;
+    let value; if (u.type === this.T.binary) value = u.payload; else { value = this._strFromBytes(u.payload); if ([this.T.json,this.T.app,this.T.os,this.T.llm,this.T.engine,this.T.machine,this.T.video].indexOf(u.type) >= 0) { try { value = JSON.parse(value); } catch (e) {} } }
+    return { type: typeName, meta: record.meta, value: value, dataUrl: record.dataUrl };
+  },
+  roundTrip(value, typeHint) { const enc = this.encode(value, typeHint, '/pixels/_roundtrip.aepx'); const dec = this.decode(enc.path); return { encode: enc, decode: dec, ok: true }; },
+  list() { if (typeof S === 'undefined') return []; return Array.from(S.fs.keys()).filter(function(k){ return k.indexOf('/pixels/') === 0 || k.indexOf('.aepx') === k.length-5; }); }
+};
+
+// ===================================================================
+//  AETHER ASI
+// ===================================================================
+const AetherASI = {
+  version: '2026.1', knowledge: [], memory: [], maxMem: 50,
+  stats: { learn: 0, reason: 0, plan: 0, reflect: 0, control: 0, generate: 0 },
+  lastPlan: null, lastCode: null, lastResult: null,
+  remember(role, text) { this.memory.push({ role: role, text: String(text).slice(0, 500), t: Date.now() }); if (this.memory.length > this.maxMem) this.memory.shift(); this._persist(); },
+  learn(fact) { const f = String(fact || '').trim(); if (!f) return false; if (!this.knowledge.includes(f)) { this.knowledge.push(f); this.stats.learn++; this._persist(); } return true; },
+  reflect() { this.stats.reflect++; return { version: this.version, heart: 'Aether language runtime', knowledge: this.knowledge.length, memory: this.memory.length, stats: Object.assign({}, this.stats), lastGoal: this.lastPlan ? this.lastPlan.goal : null, os: (typeof S !== 'undefined') ? { uptime: ((Date.now() - S.boot) / 1000) | 0, files: S.fs.size, windows: S.wins.size } : null }; },
+  _persist() { try { if (typeof S === 'undefined') return; S.fs.set('/asi/memory.json', JSON.stringify(this.memory.slice(-30))); S.fs.set('/asi/knowledge.json', JSON.stringify(this.knowledge.slice(-100))); S.fs.set('/asi/stats.json', JSON.stringify(this.stats)); if (typeof saveState === 'function') saveState(); } catch (e) {} },
+  loadMemory() { try { if (typeof S === 'undefined') return; if (S.fs.has('/asi/memory.json')) { const a = JSON.parse(S.fs.get('/asi/memory.json')); if (Array.isArray(a)) this.memory = a; } if (S.fs.has('/asi/knowledge.json')) { const k = JSON.parse(S.fs.get('/asi/knowledge.json')); if (Array.isArray(k)) this.knowledge = k; } if (S.fs.has('/asi/stats.json')) { const s = JSON.parse(S.fs.get('/asi/stats.json')); if (s && typeof s === 'object') Object.assign(this.stats, s); } } catch (e) {} },
+  control(query) {
+    const q = String(query || '').toLowerCase().trim(); this.stats.control++;
+    const appMap = { terminal: 'terminal', files: 'files', editor: 'editor', playground: 'playground', settings: 'settings', images: 'images', audio: 'audio', chat: 'chat', asi: 'chat', sysmon: 'sysmon', automation: 'automation', taskmgr: 'taskmgr', logs: 'logs', notes: 'notes', appbuilder: 'appbuilder', docs: 'docs', examples: 'examples', notifications: 'notifications' };
+    for (const key of Object.keys(appMap)) { if (q.indexOf('open') >= 0 && q.indexOf(key) >= 0) { if (typeof open === 'function') open(appMap[key]); return { ok: true, action: 'open_app', app: appMap[key] }; } }
+    if (/write\s+file|save\s+file|create\s+file/.test(q)) { const m = query.match(/(?:file\s+)(\S+)\s+(.+)$/i) || query.match(/\/[\w.\/\-]+\s+(.+)$/); let path = '/asi/note.txt', data = 'written by ASI ' + new Date().toISOString(); const pathM = query.match(/(\/[\w.\/\-]+)/); if (pathM) path = pathM[1]; const rest = query.replace(/.*?(write|save|create)\s+file\s*/i, '').replace(path, '').trim(); if (rest) data = rest; if (typeof S !== 'undefined') { S.fs.set(path, data); if (typeof saveState === 'function') saveState(); } return { ok: true, action: 'write_file', path: path }; }
+    if (/list\s+files|ls\b|show\s+files/.test(q)) { const files = (typeof S !== 'undefined') ? Array.from(S.fs.keys()) : []; return { ok: true, action: 'list_files', files: files }; }
+    if (/toast|notify/.test(q)) { const msg = query.replace(/.*?(toast|notify)\s*/i, '').trim() || 'ASI notify'; if (typeof toast === 'function') toast(msg); if (typeof addNotification === 'function') addNotification(msg, 'info', 'ASI'); return { ok: true, action: 'toast', msg: msg }; }
+    if (/search|find/.test(q)) { const terms = query.replace(/.*?(search|find)\s*/i, '').trim(); const results = searchFiles(terms); return { ok: true, action: 'search', results: results }; }
+    return null;
+  },
+  plan(goal) { this.stats.plan++; this.stats.reason++; const g = String(goal || '').toLowerCase().trim(); const steps = []; const codeParts = [];
+    steps.push({ act: 'log', detail: 'goal: ' + g.slice(0, 80) });
+    const ctrl = this.control(goal);
+    if (ctrl && ctrl.ok && ctrl.action === 'open_app') { steps.push({ act: 'control', detail: 'open ' + ctrl.app }); codeParts.push('os_open("' + ctrl.app + '")'); codeParts.push('print("opened ' + ctrl.app + '")'); }
+    else if (ctrl && ctrl.ok && ctrl.action === 'write_file') { steps.push({ act: 'control', detail: 'write ' + ctrl.path }); codeParts.push('fs_write(' + JSON.stringify(ctrl.path) + ', ' + JSON.stringify((typeof S !== 'undefined' && S.fs.get(ctrl.path)) || '') + ')'); codeParts.push('print("wrote ' + ctrl.path + '")'); }
+    else if (ctrl && ctrl.ok && ctrl.action === 'list_files') { steps.push({ act: 'control', detail: 'ls' }); codeParts.push('print(fs_list())'); }
+    else if (ctrl && ctrl.ok && ctrl.action === 'toast') { steps.push({ act: 'control', detail: 'toast' }); codeParts.push('os_toast(' + JSON.stringify(ctrl.msg) + ')'); }
+    else if (ctrl && ctrl.ok && ctrl.action === 'search') { steps.push({ act: 'control', detail: 'search' }); codeParts.push('print(fs_search(' + JSON.stringify(ctrl.results||'') + '))'); }
+    else if (/help|what can|who are you|reflect|status/.test(g)) { steps.push({ act: 'reflect', detail: 'status' }); codeParts.push('print("Aether ASI " + "2026.1")'); codeParts.push('print("heart: Aether language runtime")'); codeParts.push('print(asi_status())'); }
+    else if (/learn\s+/.test(g)) { const fact = goal.replace(/^learn\s+/i, '').trim(); steps.push({ act: 'learn', detail: fact.slice(0, 60) }); codeParts.push('print("learned")'); this.learn(fact); }
+    else if (/test|assert|unit/.test(g)) { steps.push({ act: 'code', detail: 'self-test' }); codeParts.push('test_eq(1+1, 2, "math")'); codeParts.push('assert(true, "alive")'); codeParts.push('print("ASI self-test OK")'); }
+    else if (/image|picture|png|draw/.test(g)) { this.stats.generate++; steps.push({ act: 'image', detail: 'generate' }); const kind = /chart/.test(g) ? 'chart' : (/avatar/.test(g) ? 'avatar' : 'plasma'); codeParts.push('let img = image_generate("' + kind + '", 128, 96, int(time() % 9999))'); codeParts.push('image_text(img, "ASI", 8, 20, 255, 255, 255)'); codeParts.push('image_save(img, "/media/asi-out.png")'); codeParts.push('print("saved /media/asi-out.png")'); steps.push({ act: 'open', detail: 'images' }); }
+    else if (/audio|beep|sound|speak|say|voice/.test(g)) { steps.push({ act: 'audio', detail: 'media' }); if (/speak|say|tts|voice/.test(g)) { codeParts.push('speak("Aether ASI online")'); codeParts.push('print("TTS queued")'); } else { codeParts.push('audio_beep(440, 0.15)'); codeParts.push('audio_beep(659, 0.2)'); codeParts.push('print("tones played")'); } }
+    else if (/file|hyperfs|fs_/.test(g) && !/write\s+file/.test(g)) { steps.push({ act: 'fs', detail: 'hyperfs' }); codeParts.push('fs_write("/asi/notes.txt", "ASI " + str(time()))'); codeParts.push('print(fs_list())'); steps.push({ act: 'open', detail: 'files' }); }
+    else if (/scaffold|create app|build app|new app/.test(g)) { steps.push({ act: 'app', detail: 'scaffold' }); codeParts.push('let app = app_scaffold("asi-tool", "Built by Aether ASI")'); codeParts.push('print(app)'); codeParts.push('app_run(app.path)'); steps.push({ act: 'open', detail: 'appbuilder' }); }
+    else if (/health|cpu|monitor|ops|sysmon/.test(g)) { steps.push({ act: 'sys', detail: 'health' }); codeParts.push('print(sys_info())'); codeParts.push('print("CPU%", sys_cpu())'); codeParts.push('print("RAM%", sys_ram())'); steps.push({ act: 'open', detail: 'sysmon' }); }
+    else if (/shell|terminal|neofetch/.test(g)) { steps.push({ act: 'shell', detail: 'neofetch' }); codeParts.push('print(shell("neofetch"))'); steps.push({ act: 'open', detail: 'terminal' }); }
+    else if (/kos|knowledge graph|add node/.test(g)) { steps.push({ act: 'kos', detail: 'query' }); codeParts.push('print(kos_status())'); codeParts.push('print(kos_query(' + JSON.stringify(goal) + ', 5))'); }
+    else if (/light.?speed|virtual.?cache|ls_run/.test(g)) { steps.push({ act: 'lightspeed', detail: 'status' }); codeParts.push('print(ls_status())'); }
+    else if (/ultimate|best answer/.test(g)) { steps.push({ act: 'ultimate', detail: 'ask' }); codeParts.push('print(ultimate_ask(' + JSON.stringify(goal) + '))'); }
+    else if (/oracle|predict|amplify/.test(g)) { steps.push({ act: 'oracle', detail: 'query' }); codeParts.push('print(oracle_status())'); codeParts.push('print(oracle_query(' + JSON.stringify(goal) + '))'); codeParts.push('print(oracle_predict(3))'); }
+    else if (/brain|think|goal /.test(g)) { steps.push({ act: 'brain', detail: 'think' }); codeParts.push('print(brain_think(' + JSON.stringify(goal) + '))'); codeParts.push('print(brain_status())'); }
+    else if (/heart|pulse|runtime/.test(g) && !/heartbeat/.test(g)) { steps.push({ act: 'heart', detail: 'beat' }); codeParts.push('print(heart_beat())'); codeParts.push('print(heart_status())'); }
+    else if (/pixel|aepx|round.?trip/.test(g)) { steps.push({ act: 'pixel', detail: 'codec' }); codeParts.push('let r = pixel_roundtrip("hello from ASI", "text")'); codeParts.push('print(r)'); codeParts.push('print(pixel_list())'); steps.push({ act: 'open', detail: 'pixels' }); }
+    else if (/vhw|virtual hardware|fabric|mind load|compute fabric/.test(g)) { steps.push({ act: 'vhw', detail: 'fabric snapshot' }); codeParts.push('print(vhw_all())'); codeParts.push('print(vhw_attend("asi-goal"))'); steps.push({ act: 'open', detail: 'vhw' }); }
+    else if (/notif|notification|bell/.test(g)) { steps.push({ act: 'notif', detail: 'send' }); codeParts.push('os_notify("ASI goal: ' + g.slice(0, 40) + '", "info", "ASI")'); codeParts.push('print("notification sent")'); }
+    else if (/^(code:|run:|aether:)/i.test(String(goal).trim())) { steps.push({ act: 'code', detail: 'user' }); codeParts.push(String(goal).replace(/^(code:|run:|aether:)\s*/i, '')); }
+    else { steps.push({ act: 'reply', detail: 'kb+llm' }); const hits = this.knowledge.filter(function (k) { return g.split(/\s+/).some(function (w) { return w.length > 2 && k.toLowerCase().indexOf(w) >= 0; }); }).slice(0, 3); if (hits.length) { codeParts.push('print("from knowledge:")'); hits.forEach(function (h) { codeParts.push('print(' + JSON.stringify('- ' + h) + ')'); }); } codeParts.push('print(llm_ask(' + JSON.stringify(goal) + '))'); codeParts.push('print("ASI heart: Aether runtime — try: open terminal | make an image | check health | learn <fact> | search <query> | notify <msg>")'); }
+    const code = codeParts.join('\n'); this.lastPlan = { goal: goal, steps: steps, code: code, t: Date.now() }; return this.lastPlan;
+  },
+  run(goal, printFn) { this.loadMemory(); this.remember('user', goal); const plan = this.plan(goal); const p = printFn || function () {};
+    p('ASI plan (' + plan.steps.length + ' steps)'); for (let i = 0; i < plan.steps.length; i++) { p('  ' + (i + 1) + '. ' + plan.steps[i].act + ' — ' + plan.steps[i].detail); }
+    p('execute Aether...'); try { const result = runAether(plan.code, p); this.lastCode = plan.code; this.lastResult = result; plan.steps.filter(function (s) { return s.act === 'open'; }).forEach(function (s) { try { if (typeof open === 'function') open(s.detail); } catch (e) {} }); this.remember('asi', 'ok: ' + plan.steps.map(function (s) { return s.act; }).join(',')); p('done'); return { ok: true, plan: plan, result: result }; }
+    catch (e) { this.remember('asi', 'err: ' + e.message); p('error: ' + e.message); return { ok: false, plan: plan, error: e.message }; }
+  },
+  query(q) { const lines = []; const r = this.run(q, function (m) { lines.push(String(m)); }); return lines.join('\n') || (r.ok ? 'ok' : r.error); },
+  status() { return this.reflect(); }
+};
+function asi_run(goal, printFn) { return AetherASI.run(goal, printFn); }
+function asi_status() { return AetherASI.status(); }
+function asi_query(q) { return AetherASI.query(q); }
+function asi_reflect() { return AetherASI.reflect(); }
+function asi_learn(fact) { return AetherASI.learn(fact); }
+
+// ===================================================================
+//  APP DEFINITIONS (simplified stubs — full versions exist in original)
+// ===================================================================
+function appDocs() { createWin('docs', 'Docs', 520, 440, '<div class="pad"><h2>Æther OS Docs</h2><p>See the language, Brain, Heart, VHW, Pixel Codec, and ASI.</p><pre>Help: llm_ask("help") · Docs app shows overview.</pre></div>'); }
+function appExamples() { createWin('examples', 'Examples', 340, 420, '<div class="list" id="ex"></div>'); const list = document.getElementById('ex'); AETHER_EXAMPLES.forEach(ex => { const c = document.createElement('div'); c.className = 'card'; c.innerHTML = `<h4>${ex.title}</h4><p>${ex.desc}</p>`; c.onclick = () => { open('playground'); setTimeout(() => { const ta = document.querySelector('#pcode'); if (ta) { ta.value = ex.code; } toast('Loaded: ' + ex.title); }, 80); }; list.appendChild(c); }); }
+function appTerminal() { createWin('terminal', 'Terminal', 560, 360, `<div class="term" id="to"></div><div class="term-in"><span style="color:#81c784">æ›</span><input id="ti" spellcheck="false" placeholder="help · aether · neofetch · ps · search <query>"></div>`); const out = document.getElementById('to'), inp = document.getElementById('ti'); let history=[], histIdx=-1; function print(t) { out.textContent += t + '\n'; out.scrollTop = out.scrollHeight; } print('Æther OS Shell · type help'); print('Aether: aether <code>  or  : <code>'); print('ASI: asi <goal>  ·  asi status'); print('Search: search <query>'); print('System: neofetch, ps, ls, open <app>, clear'); async function runLine(line) { const raw = line.trim(); if (!raw) return; print('æ› ' + raw); const low = raw.toLowerCase(); if (low === 'help') { print('Commands: help, clear, neofetch, info, ps, ls, open <app>, search <query>, aether <expr>, : <expr>, asi <goal>, auto-list'); return; } if (low === 'clear') { out.textContent = ''; return; } if (low === 'neofetch' || low === 'info') { const up = ((Date.now()-S.boot)/1000)|0; print('          æ OS'); print('  OS      Æther OS Ultimate'); print('  Kernel  aether-kernel virtual'); print('  Shell   æ-shell + Aether lang'); print('  Uptime  ' + up + 's'); print('  CPU     ' + S.hardware.cpu.load.toFixed(1) + '% · ' + S.hardware.cpu.cores + ' cores'); print('  RAM     ' + (S.hardware.ram.used).toFixed(2) + ' / ' + S.hardware.ram.total + ' GB'); print('  Files   ' + S.fs.size + ' · Wins ' + S.wins.size); print('  Auto    ' + (S.automations||[]).length); return; } if (low === 'ps') { S.processes.forEach(p => print(p.pid + '\t' + p.name + '\tCPU ' + p.cpu.toFixed(1) + '%\t' + p.mem.toFixed(1) + 'MB')); return; } if (low === 'ls') { if (!S.fs.size) print('(empty fs)'); else Array.from(S.fs.keys()).forEach(k => print(k)); return; } if (low.startsWith('open ')) { open(raw.slice(5).trim()); return; } if (low.startsWith('search ')) { const results = searchFiles(raw.slice(7).trim()); print(results.length ? JSON.stringify(results, null, 2) : 'No results'); return; } if (low === 'auto-list') { (S.automations||[]).forEach(a => print((a.enabled?'[on]':'[off]') + ' ' + a.id + ' ' + a.name)); return; } if (low === 'asi' || low === 'asi status') { try { print(JSON.stringify(asi_reflect(), null, 2)); } catch (e) { print('ASI error: ' + e.message); } return; } if (low.startsWith('asi ')) { const goal = raw.slice(4).trim(); try { AetherASI.run(goal, (m) => print(String(m))); } catch (e) { print('ASI error: ' + e.message); } return; } if (low.startsWith('aether ') || raw.startsWith(':')) { const code = low.startsWith('aether ') ? raw.slice(7) : raw.slice(1).trim(); try { const result = runAether(code, (m) => print(String(m))); if (result !== undefined && result !== null) print('→ ' + String(result)); } catch (e) { print('Error: ' + e.message); } return; } try { const result = runAether(raw, (m) => print(String(m))); if (result !== undefined && result !== null && result !== '') print('→ ' + String(result)); } catch(e) { print('Unknown command. try help  ·  Error: ' + e.message); } } inp.onkeydown = async (e) => { if (e.key === 'Enter') { const v = inp.value; inp.value = ''; if (v.trim()) { history.push(v); histIdx = history.length; } await runLine(v); } else if (e.key === 'ArrowUp') { if (histIdx > 0) { histIdx--; inp.value = history[histIdx] || ''; e.preventDefault(); } } else if (e.key === 'ArrowDown') { if (histIdx < history.length-1) { histIdx++; inp.value = history[histIdx] || ''; } else { histIdx = history.length; inp.value = ''; } e.preventDefault(); } }; setTimeout(() => inp.focus(), 100); }
+
+function appEditor() { const r = createWin('editor', 'Editor', 540, 360, `<div class="editor"><div class="ebar"><div class="tabs" id="etabs"></div><button class="btn" id="newtab">+</button></div><textarea id="ecode" spellcheck="false"></textarea><div class="estat"><span id="estat-left">Ready</span><span id="estat-right">Line 1, Col 1</span></div></div>`); const tabs = r.el.querySelector('#etabs'), code = r.el.querySelector('#ecode'), statLeft = r.el.querySelector('#estat-left'), statRight = r.el.querySelector('#estat-right'); let files = [{ name: 'untitled.js', content: 'return 42;' }]; let activeIdx = 0; function renderTabs() { tabs.innerHTML = ''; files.forEach((f, i) => { const tab = document.createElement('span'); tab.className = 'tab' + (i===activeIdx ? ' active' : ''); tab.textContent = f.name; tab.onclick = () => { activeIdx = i; code.value = files[activeIdx].content; renderTabs(); }; const close = document.createElement('span'); close.textContent = '×'; close.style.marginLeft = '6px'; close.style.cursor = 'pointer'; close.onclick = (e) => { e.stopPropagation(); if (files.length > 1) { files.splice(i, 1); if (activeIdx >= files.length) activeIdx = files.length-1; renderTabs(); code.value = files[activeIdx].content; } }; tab.appendChild(close); tabs.appendChild(tab); }); code.value = files[activeIdx].content; updateStatus(); } function updateStatus() { const lines = code.value.split('\n'); const line = lines.length; const col = (lines[lines.length-1] || '').length + 1; statRight.textContent = `Line ${line}, Col ${col}`; } code.oninput = () => { files[activeIdx].content = code.value; updateStatus(); }; code.onkeyup = updateStatus; code.onclick = updateStatus; r.el.querySelector('#newtab').onclick = () => { const name = prompt('File name:', 'new.js'); if (name) { files.push({ name, content: '' }); activeIdx = files.length-1; renderTabs(); code.value = files[activeIdx].content; toast('New tab: '+name); } }; const saveBtn = document.createElement('button'); saveBtn.className = 'btn'; saveBtn.textContent = 'Save'; saveBtn.onclick = async () => { const name = files[activeIdx].name; await vfsWrite('/'+name, code.value); toast('Saved '+name); }; r.el.querySelector('.ebar').appendChild(saveBtn); const runBtn = document.createElement('button'); runBtn.className = 'btn pri'; runBtn.textContent = 'Run'; runBtn.onclick = async () => { const src = code.value; if (/^\s*(import|def|print|from|class)\s/.test(src)) { if (!pyodideReady) await loadPyodide(); if (!pyodideReady) { statLeft.textContent = 'Pyodide not loaded'; return; } try { const result = await pyodide.runPythonAsync(src); statLeft.textContent = '→ '+String(result); } catch(e) { statLeft.textContent = 'Error: '+e.message; } } else { try { const result = new Function(src)(); statLeft.textContent = '→ '+String(result===undefined?'undefined':result); } catch(e) { statLeft.textContent = 'Error: '+e.message; } } }; r.el.querySelector('.ebar').appendChild(runBtn); renderTabs(); }
+
+function appPlayground() { const r = createWin('playground', 'Æther Playground', 620, 460, `<div class="playground"><div class="p-top"><select id="plang"><option value="aether" selected>Æther Language</option><option value="js">JavaScript</option></select><select id="pex"><option value="">Examples…</option></select><button class="btn pri" id="prun">▶ Run</button><button class="btn" id="pclear">Clear Out</button></div><div class="p-body"><textarea id="pcode" spellcheck="false"></textarea><div class="p-output" id="pout"></div></div></div>`); const lang = r.el.querySelector('#plang'), code = r.el.querySelector('#pcode'), out = r.el.querySelector('#pout'), pex = r.el.querySelector('#pex'); AETHER_EXAMPLES.forEach((ex,i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = ex.title; pex.appendChild(o); }); code.value = AETHER_EXAMPLES[0].code; function print(msg) { out.textContent += msg + '\n'; out.scrollTop = out.scrollHeight; } pex.onchange = () => { if (pex.value === '') return; code.value = AETHER_EXAMPLES[Number(pex.value)].code; lang.value = 'aether'; pex.value = ''; }; r.el.querySelector('#prun').onclick = () => { out.textContent = ''; const src = code.value; try { if (lang.value === 'aether') { const result = runAether(src, print); if (result !== undefined && result !== null) print('→ ' + String(result)); print('✓ done'); } else { const logs = []; const c = { log: (...a) => logs.push(a.join(' ')) }; Function('console', '"use strict";\\n' + src)(c); logs.forEach(print); print('✓ done'); } } catch (e) { print('Error: ' + e.message); } }; r.el.querySelector('#pclear').onclick = () => { out.textContent = ''; }; code.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); r.el.querySelector('#prun').click(); } }); }
+
+function appChat() { const r = createWin('chat', 'Aether ASI', 460, 480, `<div class="chat"><div class="msgs" id="cmsgs"></div><div class="chat-in"><input id="cin" placeholder="Goal: check health · make an image · save a file · create app…" spellcheck="false"><button class="btn pri" id="csend">Run</button></div><div style="padding:6px 10px;font-size:0.68rem;color:var(--dim);border-top:1px solid var(--border)">Heart: Aether language runtime · plan → execute on this OS</div></div>`); const msgs = r.el.querySelector('#cmsgs'), inp = r.el.querySelector('#cin'); function bubble(text, who) { const d = document.createElement('div'); d.className = 'bubble ' + who; d.style.whiteSpace = 'pre-wrap'; d.textContent = text; msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; } AetherASI.loadMemory(); bubble('Aether ASI online.\nHeart = Aether language.\nI plan, then run real code (files, images, audio, apps, search, notifications).', 'bot'); function send() { const q = inp.value.trim(); if (!q) return; inp.value = ''; bubble(q, 'user'); const lines = []; try { const r = AetherASI.run(q, function (m) { lines.push(String(m)); }); bubble(lines.join('\n') || (r.ok ? 'done' : r.error), 'bot'); if (typeof log === 'function') log('ASI: ' + q.slice(0, 50), r.ok ? 'INFO' : 'WARN'); } catch (e) { bubble('Error: ' + e.message, 'bot'); } } r.el.querySelector('#csend').onclick = send; inp.onkeydown = function (e) { if (e.key === 'Enter') send(); }; }
+
+function appImages() { const r = createWin('images', 'Images', 480, 400, `<div class="pad"><div class="row-btns" style="margin-bottom:8px"><button class="btn pri" id="img-gen">Generate sample</button><button class="btn" id="img-refresh">Refresh</button><button class="btn" id="img-clear">Clear list</button></div><div class="meta">Procedural PNG via Aether image_* APIs · stored in HyperFS as data URLs</div><div id="img-list" style="display:grid;gap:8px;margin-top:8px"></div></div>`); const list = r.el.querySelector('#img-list'); function render() { list.innerHTML = ''; const items = (window.__aetherImages || []).slice().reverse(); if (typeof S !== 'undefined') { for (const [k,v] of S.fs.entries()) { if (String(v).startsWith('data:image') && !items.find(x => x.path === k)) { items.push({ path: k, url: v, ts: 0 }); } } } if (!items.length) { list.innerHTML = '<div style="color:var(--dim)">No images yet. Run the Image example in Playground or click Generate.</div>'; return; } items.forEach(it => { const card = document.createElement('div'); card.style.cssText = 'background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:8px'; card.innerHTML = `<div style="font-size:0.72rem;color:var(--dim);margin-bottom:4px">${it.path||'image'}</div><img src="${it.url}" style="max-width:100%;border-radius:6px;background:#000"/>`; list.appendChild(card); }); } r.el.querySelector('#img-gen').onclick = () => { try { runAether(`let img = image_create(200, 120)\nimage_fill(img, 10, 12, 24)\nlet y = 0\nwhile y < 120 {\n  let x = 0\n  while x < 200 {\n    image_pixel(img, x, y, (x*2)%255, 100, (y*3)%255)\n    x = x + 3\n  }\n  y = y + 3\n}\nimage_text(img, "ÆTHER OS", 50, 64, 255, 230, 120)\nimage_save(img, "/media/studio.png")\nprint("ok")\n`, m => {}); toast('Sample image generated'); render(); } catch (e) { toast('Image error: ' + e.message); } }; r.el.querySelector('#img-refresh').onclick = render; r.el.querySelector('#img-clear').onclick = () => { window.__aetherImages = []; render(); }; render(); }
+
+function appAudio() { createWin('audio', 'Audio Lab', 400, 320, `<div class="pad"><p style="margin-bottom:8px;color:var(--dim);font-size:0.8rem">Web Audio beeps + Speech Synthesis · callable from Æther</p><label>Frequency (Hz)</label><input id="af" type="number" value="440"><label>Duration (s)</label><input id="ad" type="number" step="0.05" value="0.2"><div class="row-btns" style="margin-top:10px"><button class="btn pri" id="aplay">Play tone</button><button class="btn" id="achord">Chord</button><button class="btn" id="aspeak">Speak status</button></div><pre id="alog" style="margin-top:10px;font-size:0.72rem;color:var(--accent2)"></pre></div>`); const logel = document.getElementById('alog'); document.getElementById('aplay').onclick = () => { const f = Number(document.getElementById('af').value)||440; const d = Number(document.getElementById('ad').value)||0.2; try { runAether('audio_beep('+f+','+d+')', ()=>{}); logel.textContent = 'Played '+f+' Hz × '+d+'s'; } catch(e){ logel.textContent = e.message; } }; document.getElementById('achord').onclick = () => { try { runAether('audio_beep(261.63,0.15)\naudio_beep(329.63,0.15)\naudio_beep(392.00,0.3)', ()=>{}); logel.textContent = 'C major chord'; } catch(e){ logel.textContent = e.message; } }; document.getElementById('aspeak').onclick = () => { try { runAether('speak("Aether audio lab online. CPU " + str(int(sys_cpu())) + " percent.")', ()=>{}); logel.textContent = 'TTS requested'; } catch(e){ logel.textContent = e.message; } }; }
+
+function appAppBuilder() { const r = createWin('appbuilder', 'App Builder', 540, 460, `<div class="pad"><h3 style="margin-bottom:6px">Build → test → run</h3><p style="color:var(--dim);font-size:0.75rem;margin-bottom:8px">Scaffolds a real Æther mini-app under /apps/, with optional unit tests.</p><label>App name</label><input id="ab-name" value="sensor-watch"><label>Description</label><input id="ab-desc" value="Watch CPU and toast on threshold"><label>Template</label><select id="ab-tpl"><option value="health">Health / ops check</option><option value="image">Image generator tool</option><option value="audio">Audio notifier</option><option value="blank">Blank main.ae</option></select><div class="row-btns" style="margin-top:10px"><button class="btn pri" id="ab-build">Scaffold</button><button class="btn green" id="ab-run">Run main.ae</button><button class="btn" id="ab-test">Run tests</button><button class="btn" id="ab-open">Open Playground</button></div><pre id="ab-out" style="margin-top:10px;max-height:180px;overflow:auto;background:#0a0a10;padding:8px;border-radius:8px;font-size:0.72rem;"></pre></div>`); const out = r.el.querySelector('#ab-out'); const log = (t) => { out.textContent += t + '\\n'; out.scrollTop = out.scrollHeight; }; function name() { return (r.el.querySelector('#ab-name').value || 'app').replace(/[^a-zA-Z0-9_-]/g,'-'); } function tplCode(n, desc, tpl) { if (tpl === 'image') return `# ${n} — image tool\\nprint("Generating…")\\nlet img = image_generate("chart", 160, 80, int(time() % 1000))\\nimage_text(img, "${n}", 8, 16, 255,255,255)\\nimage_save(img, "/media/${n}.png")\\nprint("Saved /media/${n}.png")\\nos_open("images")\\n`; if (tpl === 'audio') return `# ${n} — audio notifier\\nprint("Notify")\\naudio_beep(660, 0.15)\\nspeak("${n} complete")\\nos_toast("${n} done")\\n`; if (tpl === 'blank') return `# ${n}\\n# ${desc}\\nprint("${n} ready")\\n`; return `# ${n} — health\\nprint("=== ${n} ===")\\nlet info = sys_info()\\nprint(info)\\nlet cpu = sys_cpu()\\nif cpu > 85 { os_toast("CPU high"); os_log("high cpu", "WARN") }\\nprint("cpu", cpu)\\n`; } r.el.querySelector('#ab-build').onclick = () => { out.textContent = ''; const n = name(); const desc = r.el.querySelector('#ab-desc').value; const tpl = r.el.querySelector('#ab-tpl').value; const main = tplCode(n, desc, tpl); const tests = `print("tests for ${n}")\\ntest_eq(1+1, 2, "math")\\nassert(true, "ok")\\nprint("tests passed")\\n`; fsWrite = (p,d) => { S.fs.set(p,d); }; fsWrite('/apps/'+n+'/main.ae', main); fsWrite('/apps/'+n+'/tests.ae', tests); fsWrite('/apps/'+n+'/README.txt', desc + '\\nTemplate: '+tpl); if (typeof saveState === 'function') saveState(); log('Scaffolded /apps/'+n+'/'); log(' · main.ae'); log(' · tests.ae'); log(' · README.txt'); toast('App '+n+' created'); }; r.el.querySelector('#ab-run').onclick = () => { out.textContent = ''; const p = '/apps/'+name()+'/main.ae'; try { if (!S.fs.has(p)) { log('Missing '+p+' — Scaffold first'); return; } runAether(S.fs.get(p), (m) => log(String(m))); log('✓ run complete'); } catch(e) { log('Error: '+e.message); } }; r.el.querySelector('#ab-test').onclick = () => { out.textContent = ''; const p = '/apps/'+name()+'/tests.ae'; try { if (!S.fs.has(p)) { log('Missing '+p); return; } runAether(S.fs.get(p), (m) => log(String(m))); log('✓ tests complete'); } catch(e) { log('FAIL: '+e.message); } }; r.el.querySelector('#ab-open').onclick = () => { const p = '/apps/'+name()+'/main.ae'; open('playground'); setTimeout(() => { const ta = document.querySelector('#pcode'); if (ta && S.fs.has(p)) ta.value = S.fs.get(p); }, 100); }; }
+
+function appAutomation() { const r = createWin('automation', 'Automation', 560, 450, `<div class="auto-dash" id="auto-dash"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;"><button class="btn pri" id="auto-new">+ New Rule</button><button class="btn" id="auto-refresh">⟳ Refresh</button><span style="font-size:0.7rem;color:var(--dim);margin-left:auto;">${S.automations.length} rules</span></div><div id="auto-list"></div><div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;"><div style="font-size:0.7rem;color:var(--dim);margin-bottom:4px;">Execution Log</div><div class="auto-logs" id="auto-logs"></div></div></div>`); const listEl = r.el.querySelector('#auto-list'), logsEl = r.el.querySelector('#auto-logs'); function renderLogs() { const logs = S.automationLogs.slice(-20); logsEl.innerHTML = logs.map(l => { const time = new Date(l.time).toLocaleTimeString(); const cls = l.ok ? 'ok' : 'err'; return `<div class="log-entry"><span class="time">[${time}]</span> <span class="${cls}">${l.msg}</span></div>`; }).join('') || '<div style="color:var(--dim);font-size:0.7rem;">No automation logs</div>'; logsEl.scrollTop = logsEl.scrollHeight; } function renderRules() { listEl.innerHTML = ''; if (!S.automations.length) { listEl.innerHTML = '<div style="color:var(--dim);padding:12px;">No automation rules. Create one!</div>'; return; } S.automations.forEach(rule => { const div = document.createElement('div'); div.className = 'auto-rule'; const statusClass = rule.enabled ? 'on' : 'off'; const statusText = rule.enabled ? '● ON' : '○ OFF'; div.innerHTML = `<div class="header"><span class="name">${rule.name}</span><span class="status ${statusClass}">${statusText}</span></div><div class="details"><span>Trigger: ${rule.trigger.type}</span><span>Action: ${rule.action.type}</span>${rule.lastRun ? `<span>Last: ${new Date(rule.lastRun).toLocaleTimeString()}</span>` : ''}${rule.nextRun ? `<span>Next: ${new Date(rule.nextRun).toLocaleTimeString()}</span>` : ''}</div><div class="actions"><button class="btn" data-action="run" data-id="${rule.id}">▶ Run</button><button class="btn" data-action="toggle" data-id="${rule.id}">${rule.enabled ? 'Disable' : 'Enable'}</button><button class="btn red" data-action="delete" data-id="${rule.id}">✕</button></div>`; listEl.appendChild(div); }); listEl.querySelectorAll('[data-action="run"]').forEach(btn => { btn.onclick = () => { runAutomation(btn.dataset.id); renderRules(); renderLogs(); }; }); listEl.querySelectorAll('[data-action="toggle"]').forEach(btn => { btn.onclick = () => { toggleAutomation(btn.dataset.id); renderRules(); }; }); listEl.querySelectorAll('[data-action="delete"]').forEach(btn => { btn.onclick = () => { if (confirm('Delete this rule?')) { deleteAutomation(btn.dataset.id); renderRules(); renderLogs(); } }; }); } r.el.querySelector('#auto-new').onclick = () => { const formHtml = `<div class="auto-form" style="padding:12px;"><h4>New Automation Rule</h4><div class="row"><label>Name</label><input id="af-name" placeholder="My Rule"></div><div class="row"><label>Trigger Type</label><select id="af-trigger"><option value="startup">Startup</option><option value="time">Time (daily)</option><option value="interval">Interval</option><option value="fileChange">File Change</option><option value="appOpen">App Open</option><option value="appClose">App Close</option><option value="networkChange">Network Change</option><option value="bluetoothConnect">Bluetooth Connect</option><option value="event">Custom Event</option></select></div><div class="row"><label>Trigger Params</label><input id="af-tparams" placeholder="e.g. path=/file.txt or appId=chat or event=myEvent"></div><div class="row"><label>Action Type</label><select id="af-action"><option value="sendToast">Send Toast</option><option value="sendLog">Send Log</option><option value="addNotification">Add Notification</option><option value="openApp">Open App</option><option value="closeApp">Close App</option><option value="runScript">Run Script (JS)</option><option value="runPython">Run Python</option><option value="writeFile">Write File</option><option value="readFile">Read File</option><option value="bluetoothScan">Bluetooth Scan</option><option value="wifiToggle">Toggle WiFi</option><option value="hotspotToggle">Toggle Hotspot</option><option value="mountFolder">Mount Folder</option><option value="systemCommand">System Command</option><option value="httpRequest">HTTP Request</option><option value="customEvent">Emit Custom Event</option></select></div><div class="row"><label>Action Params</label><input id="af-aparams" placeholder="e.g. message=Hello or appId=chat or script=..."></div><div class="row"><label>Schedule (optional)</label><input id="af-schedule" placeholder="interval:10s, daily:09:00, weekly:1 09:00"></div><div class="row"><button class="btn pri" id="af-save">Create</button><button class="btn" id="af-cancel">Cancel</button></div></div>`; const overlay = document.createElement('div'); overlay.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:flex;align-items:center;justify-content:center;'; overlay.innerHTML = `<div style="background:var(--panel);border-radius:12px;padding:16px;max-width:400px;width:90%;max-height:80%;overflow-y:auto;">${formHtml}</div>`; r.el.querySelector('.wbody').appendChild(overlay); overlay.querySelector('#af-cancel').onclick = () => overlay.remove(); overlay.querySelector('#af-save').onclick = () => { const name = overlay.querySelector('#af-name').value || 'Unnamed'; const triggerType = overlay.querySelector('#af-trigger').value; const actionType = overlay.querySelector('#af-action').value; const tparams = overlay.querySelector('#af-tparams').value; const aparams = overlay.querySelector('#af-aparams').value; const scheduleStr = overlay.querySelector('#af-schedule').value; const parseParams = (str) => { const obj = {}; if (!str) return obj; str.split(',').forEach(pair => { const [k, ...v] = pair.split('='); if (k) obj[k.trim()] = v.join('=').trim(); }); return obj; }; const trigger = { type: triggerType, params: parseParams(tparams) }; const action = { type: actionType, params: parseParams(aparams) }; let schedule = null; if (scheduleStr) { if (scheduleStr.startsWith('interval:')) { const val = scheduleStr.replace('interval:',''); const match = val.match(/(\d+)(s|m|h)/); if (match) { const num = parseInt(match[1]); const unit = match[2]; const obj = { type: 'interval' }; if (unit === 's') obj.seconds = num; else if (unit === 'm') obj.minutes = num; else if (unit === 'h') obj.hours = num; schedule = obj; } } else if (scheduleStr.startsWith('daily:')) { const time = scheduleStr.replace('daily:',''); const [h,m] = time.split(':').map(Number); schedule = { type: 'daily', hour: h || 0, minute: m || 0 }; } else if (scheduleStr.startsWith('weekly:')) { const parts = scheduleStr.replace('weekly:','').split(' '); const [day, time] = parts; const [h,m] = (time || '09:00').split(':').map(Number); schedule = { type: 'weekly', day: parseInt(day) || 0, hour: h || 0, minute: m || 0 }; } } const rule = addAutomation(name, trigger, action, schedule); if (schedule) { rule.nextRun = calculateNextRun(schedule); saveState(); } overlay.remove(); renderRules(); renderLogs(); toast('Rule created: '+name); }; }; r.el.querySelector('#auto-refresh').onclick = () => { renderRules(); renderLogs(); }; const logInterval = setInterval(() => { if (document.body.contains(r.el)) renderLogs(); else clearInterval(logInterval); }, 2000); renderRules(); renderLogs(); }
+
+function app3D() { const r = createWin('3d', '3D Viewer', 500, 400, `<div class="three-container" id="three-container" style="width:100%;height:100%;background:#111;"></div>`); setTimeout(() => { const container = r.el.querySelector('#three-container'); const scene = new THREE.Scene(); scene.background = new THREE.Color(0x111122); const camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000); camera.position.set(2,2,5); const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(container.clientWidth, container.clientHeight); container.appendChild(renderer.domElement); const controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true; const geometry = new THREE.BoxGeometry(1,1,1); const material = new THREE.MeshStandardMaterial({ color: 0x8b7cff, roughness: 0.4, metalness: 0.1 }); const cube = new THREE.Mesh(geometry, material); scene.add(cube); const light = new THREE.DirectionalLight(0xffffff, 1); light.position.set(5,10,7); scene.add(light); scene.add(new THREE.AmbientLight(0x404060)); function animate() { requestAnimationFrame(animate); cube.rotation.x += 0.01; cube.rotation.y += 0.02; controls.update(); renderer.render(scene, camera); } animate(); const ro = new ResizeObserver(() => { const w=container.clientWidth, h=container.clientHeight; camera.aspect = w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h); }); ro.observe(container); }, 50); }
+
+function appVideo() { const r = createWin('video', 'Video Player', 560, 360, `<div class="video-container" style="flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;"><video id="video-player" controls style="width:100%;height:100%;background:#000;"></video></div><div style="padding:8px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0"><input id="video-url" placeholder="YouTube URL or file" style="flex:1;background:var(--elevated);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none"><button class="btn" id="video-load">Load</button><button class="btn" id="video-file">📁</button></div>`); const video = r.el.querySelector('#video-player'), urlInput = r.el.querySelector('#video-url'), container = r.el.querySelector('.video-container'); r.el.querySelector('#video-load').onclick = () => { const url = urlInput.value.trim(); if (!url) return; const match = url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/); if (match) { container.innerHTML = `<iframe src="https://www.youtube.com/embed/${match[1]}?autoplay=1" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`; return; } video.src = url; video.controls = true; video.load(); video.play().catch(() => {}); }; r.el.querySelector('#video-file').onclick = () => { const input = document.createElement('input'); input.type = 'file'; input.accept = 'video/*'; input.onchange = () => { const file = input.files[0]; if (file) { const url = URL.createObjectURL(file); video.src = url; video.controls = true; video.load(); video.play().catch(() => {}); toast('Loaded '+file.name); } }; input.click(); }; }
+
+function appNetwork() { const r = createWin('network', 'Network', 380, 450, '<div class="net" id="nr"></div>'); const root = r.el.querySelector('#nr'); function render() { const n = S.net; const wifiRows = (n.wifiList.length ? n.wifiList : [n.ssid]).map(ssid => { const on = n.wifi && ssid === n.ssid; return `<div class="nrow${on?' on':''}" data-w="${ssid}">${ssid}${on?' · connected':''}<span class="r">${on?n.signal+'%':'···'}</span></div>`; }).join(''); const btRows = (n.devices||[]).map(d => `<div class="nrow">${d}</div>`).join('') || '<div style="color:var(--dim);font-size:0.78rem;padding:4px">Scan for devices</div>'; const bandwidth = S.net.bandwidthHistory.slice(-10); const bwGraph = bandwidth.map((b,i) => `<span style="display:inline-block;width:8px;height:${Math.min(30, b.downlink*3)}px;background:var(--accent);margin:0 1px;"></span>`).join(''); root.innerHTML = `<h3>Wi‑Fi <button class="toggle${n.wifi?' on':''}" id="tw"></button></h3>${wifiRows}<div class="row-btns"><button class="btn" id="sw">Scan</button><button class="btn" id="dw">Disconnect</button></div><h3>Bluetooth <button class="toggle${n.bt?' on':''}" id="tb"></button></h3>${btRows}<div class="row-btns"><button class="btn" id="sb">Scan</button></div><h3>Hotspot <button class="toggle${n.hotspot?' on':''}" id="th"></button></h3><div class="nrow">${n.hotspot?n.hsName+' · active':'Off'}</div><h3>Light-speed link</h3><div class="meta">Mode ${n.link.mode}\nLatency ${n.link.ms} ms\nThroughput ${n.link.mbps} Mbps\nIP ${n.ip} · MAC ${n.mac} · DNS ${n.dns}</div><h3>Bandwidth (last 10 samples)</h3><div style="display:flex;align-items:end;height:40px;gap:2px;margin:4px 0;background:var(--elevated);border-radius:6px;padding:4px;">${bwGraph || '—'}</div><div class="row-btns"><button class="btn pri" id="ls">Instant scan</button><button class="btn" id="rd">Read status</button><button class="btn" id="lp">Load profile</button></div>`; root.querySelector('#tw').onclick = () => { n.wifi=!n.wifi; saveState(); updateBadge(); render(); toast(n.wifi?'Wi‑Fi on':'Wi‑Fi off'); EventBus.emit('network:changed', { wifi: n.wifi }); }; root.querySelector('#tb').onclick = () => { n.bt=!n.bt; saveState(); updateBadge(); render(); toast(n.bt?'BT on':'BT off'); }; root.querySelector('#th').onclick = () => { n.hotspot=!n.hotspot; saveState(); updateBadge(); render(); toast(n.hotspot?'Hotspot on':'Hotspot off'); }; root.querySelector('#sw').onclick = () => { netScan(); render(); toast('Wi‑Fi scanned'); }; root.querySelector('#sb').onclick = () => { netScan(); render(); toast('BT scanned'); }; root.querySelector('#dw').onclick = () => { n.wifi=false; saveState(); updateBadge(); render(); toast('Disconnected'); }; root.querySelector('#ls').onclick = () => { netScan(); render(); toast('Scan · '+n.link.ms+'ms'); }; root.querySelector('#rd').onclick = () => { toast(`Wi‑Fi ${n.wifi?n.ssid:'off'} · IP ${n.ip}`); }; root.querySelector('#lp').onclick = async () => { const raw = await vfsRead('/net/profile.json'); if (!raw) { toast('No profile'); return; } try { const p = JSON.parse(raw); if(p.ssid) n.ssid=p.ssid; if(p.mode) n.link.mode=p.mode; n.wifi=true; saveState(); updateBadge(); render(); toast('Profile loaded'); } catch(e) { toast('Bad profile'); } }; root.querySelectorAll('[data-w]').forEach(row => { row.onclick = () => { n.wifi=true; n.ssid=row.getAttribute('data-w'); n.signal=80+(Math.random()*20|0); saveState(); updateBadge(); render(); toast('Connected · '+n.ssid); EventBus.emit('network:changed', { wifi: true, ssid: n.ssid }); }; }); } netScan(); render(); }
+
+function appBluetooth() { const r = createWin('bluetooth', 'Bluetooth', 380, 350, '<div class="pad" id="btui"></div>'); const root = r.el.querySelector('#btui'); function render() { const connected = S.bluetooth.device; const devices = S.bluetooth.discovered || []; let html = `<h3>Bluetooth</h3><p><button class="btn pri" id="bt-scan">Scan</button></p>`; html += `<div>Status: ${connected ? 'Connected to '+ (connected.name || 'device') : 'Disconnected'}</div>`; html += `<h4>Discovered devices</h4>`; devices.forEach(d => { html += `<div class="nrow">${d.name || d.id || 'Unknown'}</div>`; }); html += `<p><button class="btn" id="bt-disconnect">Disconnect</button></p>`; root.innerHTML = html; root.querySelector('#bt-scan').onclick = scanBluetooth; root.querySelector('#bt-disconnect').onclick = () => { if (S.bluetooth.device && S.bluetooth.device.gatt) { S.bluetooth.device.gatt.disconnect(); } S.bluetooth.device = null; updateBTBadge(); render(); toast('Disconnected'); EventBus.emit('bluetooth:disconnected', {}); }; } render(); const interval = setInterval(() => { if (document.body.contains(r.el)) render(); else clearInterval(interval); }, 3000); }
+
+function appFiles() { const r = createWin('files', 'HyperFS', 360, 300, `<div style="padding:6px 8px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;"><button class="btn" id="nf">New</button><button class="btn" id="upf">Upload</button><button class="btn" id="mount-btn">Mount</button></div><div class="file-search"><input id="fs-search" placeholder="Search files…"><span class="results" id="fs-results"></span></div><div class="files" id="fl"></div>`); const list = r.el.querySelector('#fl'); const searchInput = r.el.querySelector('#fs-search'); const resultsSpan = r.el.querySelector('#fs-results'); function draw(query) { list.innerHTML = ''; let entries = Array.from(S.fs.entries()); if (query) { const q = query.toLowerCase(); entries = entries.filter(([path, entry]) => path.toLowerCase().includes(q) || (entry.content && entry.content.toLowerCase().includes(q))); resultsSpan.textContent = entries.length + ' matches'; } else { resultsSpan.textContent = ''; } entries.forEach(([path, entry]) => { const d = document.createElement('div'); d.className = 'file'; const name = path.split('/').pop(); d.innerHTML = `<div style="font-size:1.15rem;margin-bottom:2px">📄</div>${name}`; d.onclick = () => { open('editor'); setTimeout(() => { const ta = document.querySelector('.editor textarea'); if (ta) ta.value = entry.content; toast('Opened '+name); }, 50); }; d.oncontextmenu = (e) => { e.preventDefault(); if(confirm('Delete '+path+'?')) { S.fs.delete(path); saveState(); draw(); } }; list.appendChild(d); }); (S.mounts || []).forEach(mount => { const d = document.createElement('div'); d.className = 'file'; d.innerHTML = `<div style="font-size:1.15rem;margin-bottom:2px">📁</div>${mount.name}`; d.onclick = () => { toast('Mounted: '+mount.name); }; d.oncontextmenu = (e) => { e.preventDefault(); if(confirm('Unmount '+mount.name+'?')) { const idx = S.mounts.indexOf(mount); if (idx > -1) { S.mounts.splice(idx, 1); draw(); toast('Unmounted'); } } }; list.appendChild(d); }); } r.el.querySelector('#nf').onclick = () => { const n = prompt('Path e.g. /note.txt'); if (!n) return; const path = n.startsWith('/') ? n : '/'+n; vfsWrite(path, ''); draw(); }; r.el.querySelector('#upf').onclick = () => { const input = document.createElement('input'); input.type = 'file'; input.multiple = true; input.onchange = async () => { for (const file of input.files) { const text = await file.text(); await vfsWrite('/'+file.name, text); } draw(); toast('Uploaded '+input.files.length+' files'); }; input.click(); }; r.el.querySelector('#mount-btn').onclick = mountRealFolder; searchInput.oninput = () => draw(searchInput.value); window._refreshFiles = draw; draw(); }
+
+function appNotes() { const r = createWin('notes', 'Notes', 320, 220, '<textarea class="notes" id="na"></textarea>'); const a = r.el.querySelector('#na'); a.value = S.notes || ''; a.oninput = () => { S.notes = a.value; saveState(); }; }
+
+function appKOS() { const r = createWin('kos', 'KOS Knowledge', 460, 380, '<div class="pad" style="font-size:0.8rem;line-height:1.45"><p style="color:var(--dim);margin-bottom:8px">Knowledge graph — add, query, verify</p><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><button class="btn pri" id="kos-add">Add node</button><button class="btn" id="kos-q">Query</button><button class="btn" id="kos-st">Status</button></div><div id="kos-out" style="font-family:var(--mono);font-size:0.72rem;white-space:pre-wrap;max-height:260px;overflow:auto"></div></div>'); const out = r.el.querySelector('#kos-out'); function show(x) { out.textContent = typeof x === 'object' ? JSON.stringify(x, null, 2) : String(x); } r.el.querySelector('#kos-st').onclick = () => show(KOS.status()); r.el.querySelector('#kos-q').onclick = () => { const q = prompt('Query terms:', 'aether'); if (q) show(KOS.query(q, 10)); }; r.el.querySelector('#kos-add').onclick = () => { const t = prompt('Title:'); if (!t) return; const body = prompt('Body:') || ''; show(KOS.add(t, 'concept', body, '', 0.6)); toast('KOS node added'); }; show(KOS.status()); }
+
+function appPixels() { const r = createWin('pixels', 'Pixels', 360, 300, '<div class="pixel" id="pxl"></div>'); const container = r.el.querySelector('#pxl'); function render() { let html = ''; S.pixel.forEach((p, id) => { html += `<div class="pix-item"><span class="label">${id}</span><span class="val">${p.type} · ${p.label}</span></div>`; }); html += `<div style="margin-top:10px;"><button class="btn" id="new-pixel">New Pixel</button></div>`; container.innerHTML = html; container.querySelector('#new-pixel').onclick = () => { const type = prompt('Type (llm, game, vm, app, file):', 'app'); const label = prompt('Label:', 'My Pixel'); if (type && label) { const id = 'px' + (S.pixel.size+1); S.pixel.set(id, { type, label, data: '' }); saveState(); render(); toast('Pixel created'); if (type === 'llm') open('chat'); else if (type === 'game') open('3d'); else if (type === 'vm') open('terminal'); else if (type === 'app') open('docs'); else if (type === 'file') open('files'); } }; } render(); }
+
+function appVHW() { const r = createWin('vhw', 'VHW Oracle', 520, 420, '<div class="vhw" id="vb" style="padding:8px;overflow:auto;height:100%"><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><button class="btn pri" id="vhw-tick">Tick</button><button class="btn" id="vhw-pulse">Pulse CPU</button><button class="btn" id="vhw-attend">Attend (mind)</button><button class="btn" id="vhw-compute">Compute</button></div><div id="vhw-agg" style="font-size:0.75rem;margin-bottom:8px;color:var(--dim)"></div><div id="vhw-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div><div id="vhw-log" style="margin-top:8px;font-family:var(--mono);font-size:0.68rem;color:var(--dim);max-height:90px;overflow:auto"></div></div>'); const grid = r.el.querySelector('#vhw-grid'), agg = r.el.querySelector('#vhw-agg'), logEl = r.el.querySelector('#vhw-log'); function bar(label, pct, color) { const p = Math.max(0, Math.min(100, Math.round(pct))); return '<div class="vh"><h4>' + label + ' <span style="float:right">' + p + '%</span></h4><div class="bar"><i style="width:' + p + '%;background:' + (color||'linear-gradient(90deg,var(--accent),var(--accent2))') + '"></i></div></div>'; } function render() { if (!document.body.contains(grid)) return; VHW.tick(); const snap = VHW.snapshot(); const a = snap.aggregates || {}; agg.innerHTML = 'compute <b>' + (a.computeLoad||0) + '%</b> · mind <b>' + (a.mindLoad||0) + '%</b> · fabric <b>' + (a.fabricHealth||0) + '%</b> · power <b>' + (a.powerDraw||0) + '</b>W'; let h = '<div style="grid-column:1/-1;font-size:0.7rem;color:var(--accent2)">Compute</div>'; Object.keys(snap.compute||{}).forEach(k => { h += bar(k, snap.compute[k], 'linear-gradient(90deg,#8b7cff,#22d3ee)'); }); h += '<div style="grid-column:1/-1;font-size:0.7rem;color:var(--accent2);margin-top:4px">Mind (logical)</div>'; Object.keys(snap.mind||{}).forEach(k => { h += bar(k, snap.mind[k], 'linear-gradient(90deg,#34d399,#8b7cff)'); }); h += '<div style="grid-column:1/-1;font-size:0.7rem;color:var(--accent2);margin-top:4px">Memory / Fabric</div>'; Object.keys(snap.memory||{}).forEach(k => { h += bar(k, snap.memory[k]); }); Object.keys(snap.fabric||{}).forEach(k => { h += bar(k, snap.fabric[k]); }); Object.keys(snap.support||{}).forEach(k => { h += bar(k, snap.support[k]); }); grid.innerHTML = h; logEl.textContent = (VHW.log(10)||[]).map(e => { const t = new Date(e.t).toLocaleTimeString(); if (e.task) return t + ' attend ' + e.task; return t + ' ' + (e.unit||'') + ' +' + (e.amount||''); }).join('\n'); } window._vhwTick = render; r.el.querySelector('#vhw-tick').onclick = () => { VHW.tick(); render(); toast('VHW tick'); }; r.el.querySelector('#vhw-pulse').onclick = () => { VHW.pulse('vCPU', 20); VHW.pulse('vGPU', 10); render(); }; r.el.querySelector('#vhw-attend').onclick = () => { VHW.attend('user-focus'); render(); toast('Mind attend'); }; r.el.querySelector('#vhw-compute').onclick = () => { const r0 = VHW.compute(200000); toast('Compute ' + r0.ms + 'ms'); render(); }; render(); }
+
+function appSysMon() { const r = createWin('sysmon', 'System Monitor', 500, 350, `<div class="sysmon"><canvas id="syschart"></canvas><div class="stats"><div>CPU: <span id="cpuload">0</span>%</div><div>RAM: <span id="ramused">0</span>GB / <span id="ramtotal">0</span>GB</div><div>Battery: <span id="batlevel">0</span>%</div><div>Temp: <span id="cputemp">0</span>°C</div></div></div>`); const canvas = r.el.querySelector('#syschart'), ctx = canvas.getContext('2d'); let data = { cpu: [], ram: [] }; function resize() { const rect = canvas.parentElement.getBoundingClientRect(); const w = rect.width - 20, h = rect.height - 60; canvas.width = w; canvas.height = h; } function draw() { resize(); const w = canvas.width, h = canvas.height; ctx.clearRect(0,0,w,h); ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5; for (let i=0; i<10; i++) { const y = (h/10)*i; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); } ctx.strokeStyle = '#8b7cff'; ctx.lineWidth = 2; ctx.beginPath(); data.cpu.forEach((v,i) => { const x = (i/data.cpu.length)*w, y = h - (v/100)*h; i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y); }); ctx.stroke(); ctx.strokeStyle = '#34d399'; ctx.lineWidth = 2; ctx.beginPath(); data.ram.forEach((v,i) => { const x = (i/data.ram.length)*w, y = h - (v/100)*h; i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y); }); ctx.stroke(); document.getElementById('cpuload').textContent = S.hardware.cpu.load.toFixed(1); document.getElementById('ramused').textContent = S.hardware.ram.used.toFixed(1); document.getElementById('ramtotal').textContent = S.hardware.ram.total.toFixed(1); document.getElementById('batlevel').textContent = S.hardware.battery.level.toFixed(0); document.getElementById('cputemp').textContent = S.hardware.cpu.temp.toFixed(1); } window._hwMonitor = () => { data.cpu.push(S.hardware.cpu.load); data.ram.push((S.hardware.ram.used / S.hardware.ram.total) * 100); if (data.cpu.length > 60) data.cpu.shift(); if (data.ram.length > 60) data.ram.shift(); draw(); }; for (let i=0; i<30; i++) { data.cpu.push(20 + Math.random()*30); data.ram.push(30 + Math.random()*20); } window._hwMonitor(); window.addEventListener('resize', draw); }
+
+function appDiskUtil() { const r = createWin('diskutil', 'Disk Utility', 400, 300, '<div class="pad" id="diskui"></div>'); const container = r.el.querySelector('#diskui'); function render() { let html = '<h3>Partitions</h3>'; S.disk.partitions.forEach(p => { const usedPercent = (p.used / p.total * 100).toFixed(0); html += `<div style="margin:6px 0;padding:6px;background:var(--elevated);border-radius:6px;"><b>${p.mount}</b> (${p.format}) – ${p.used.toFixed(1)}GB / ${p.total}GB (${usedPercent}%)<div class="bar"><i style="width:${usedPercent}%"></i></div></div>`; }); html += `<h3>Total Storage</h3><div>Total: ${S.hardware.storage.total.toFixed(1)} GB</div><div>Used: ${S.hardware.storage.used.toFixed(1)} GB</div><div>Free: ${S.hardware.storage.free.toFixed(1)} GB</div>`; container.innerHTML = html; } render(); const interval = setInterval(() => { if (document.body.contains(r.el)) render(); else clearInterval(interval); }, 5000); }
+
+function appTaskMgr() { const r = createWin('taskmgr', 'Task Manager', 400, 300, '<div class="pad" id="tm" style="font-family:var(--mono);font-size:0.78rem;"></div>'); const container = r.el.querySelector('#tm'); function render() { let html = '<table style="width:100%;border-collapse:collapse;">'; html += '<tr><th>PID</th><th>Name</th><th>CPU%</th><th>Mem(MB)</th><th></th></tr>'; S.processes.forEach(p => { html += `<tr><td>${p.pid}</td><td>${p.name}</td><td>${p.cpu.toFixed(1)}</td><td>${p.mem.toFixed(1)}</td><td><button class="btn" data-pid="${p.pid}" style="font-size:0.6rem;padding:1px 6px;">kill</button></td></tr>`; }); html += '</table>'; container.innerHTML = html; container.querySelectorAll('[data-pid]').forEach(btn => { btn.onclick = () => { const pid = parseInt(btn.dataset.pid); if (pid <= 2) { toast('Cannot kill system process'); return; } const idx = S.processes.findIndex(p => p.pid === pid); if (idx > -1) { S.processes.splice(idx, 1); saveState(); render(); toast('Killed PID '+pid); } }; }); } render(); const interval = setInterval(() => { if (document.body.contains(r.el)) render(); else clearInterval(interval); }, 3000); }
+
+function appLogs() { const r = createWin('logs', 'System Log', 500, 350, `<div class="pad" id="lg" style="font-family:var(--mono);font-size:0.75rem;overflow-y:auto;height:100%;"><div style="margin-bottom:6px;display:flex;gap:8px;"><button class="btn" data-filter="all">All</button><button class="btn" data-filter="INFO">Info</button><button class="btn" data-filter="WARN">Warn</button><button class="btn" data-filter="ERROR">Error</button></div><div id="loglist"></div></div>`); const container = r.el.querySelector('#loglist'); let filter = 'all'; r.el.querySelectorAll('[data-filter]').forEach(btn => { btn.onclick = () => { filter = btn.dataset.filter; render(); }; }); function render() { const logs = filter === 'all' ? S.logs : S.logs.filter(l => l.level === filter); container.innerHTML = logs.map(l => { const time = new Date(l.time).toLocaleTimeString(); const cls = 'log-'+l.level.toLowerCase(); return `<div class="${cls}">[${time}] [${l.level}] ${l.msg}</div>`; }).join('') || '<div style="color:var(--dim)">No logs</div>'; } render(); const interval = setInterval(() => { if (document.body.contains(r.el)) render(); else clearInterval(interval); }, 2000); }
+
+function appModules() { const r = createWin('modules', 'Kernel Modules', 320, 250, '<div class="pad" id="km"></div>'); const container = r.el.querySelector('#km'); function render() { let html = '<h3>Loaded Modules</h3>'; S.modules.forEach(mod => { html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);"><span>${mod}</span><span style="color:var(--green)">● loaded</span><button class="btn" data-mod="${mod}" style="font-size:0.6rem;">unload</button></div>`; }); container.innerHTML = html; container.querySelectorAll('[data-mod]').forEach(btn => { btn.onclick = () => { const mod = btn.dataset.mod; const idx = S.modules.indexOf(mod); if (idx > -1) { S.modules.splice(idx, 1); saveState(); render(); toast('Unloaded '+mod); } }; }); const addBtn = document.createElement('button'); addBtn.className = 'btn'; addBtn.textContent = 'Load module'; addBtn.onclick = () => { const name = prompt('Module name:'); if (name && !S.modules.includes(name)) { S.modules.push(name); saveState(); render(); toast('Loaded '+name); } }; container.appendChild(addBtn); } render(); }
+
+function appSettings() { const r = createWin('settings', 'Settings', 300, 220, `<div class="pad"><label>Status label</label><input id="sl"><button class="btn" id="theme-btn" style="margin-top:6px">Toggle Theme</button><button class="btn" id="clr" style="margin-top:6px">Clear stored data</button><p style="margin-top:12px;color:var(--dim);font-size:0.78rem">Right-click desktop · Start search · Automation enabled</p></div>`); const sl = r.el.querySelector('#sl'); sl.value = S.settings.label || ''; sl.onchange = () => { S.settings.label = sl.value; saveState(); toast('Saved'); }; r.el.querySelector('#theme-btn').onclick = toggleTheme; r.el.querySelector('#clr').onclick = () => { if (confirm('Clear all saved data?')) { localStorage.removeItem('aether-ultimate-v2'); location.reload(); } }; }
+
+function appSys() { const up = (Date.now()-S.boot)/1000|0; const st = { wifi: S.net.wifi ? S.net.ssid+' ('+S.net.signal+'%)' : 'off', bt: S.net.bt?'on':'off', hotspot: S.net.hotspot?S.net.hsName:'off', link: S.net.link.mode+' · '+S.net.link.ms+'ms · '+S.net.link.mbps+' Mbps' }; createWin('sys', 'System', 320, 280, `<div class="mono-block">Æther OS Ultimate\nAutomation ${S.automations.length} rules\nUptime   ${up}s\nWindows  ${S.wins.size}\nFiles    ${S.fs.size}\nMounts   ${(S.mounts||[]).length}\nKnowledge ${S.knowledge.length}\nWi‑Fi    ${st.wifi}\nBT       ${st.bt}\nHotspot  ${st.hotspot}\nLink     ${st.link}\nCPU      ${S.hardware.cpu.load.toFixed(1)}%\nRAM      ${(S.hardware.ram.used/S.hardware.ram.total*100).toFixed(1)}%\nBattery  ${S.hardware.battery.level.toFixed(0)}%</div>`); }
+
+function appAbout() { createWin('about', 'About', 400, 320, `<div class="pad"><h2 style="margin-bottom:6px">Æther OS · ASI Core</h2><p>Heart = <b>Aether language runtime</b> · Brain = independent mind · VHW Oracle = fabric intelligence.</p><ul style="margin:8px 0;padding-left:18px;font-size:0.8rem;line-height:1.5"><li>Æther language · Playground · Terminal · Examples</li><li>Brain / Heart / VHW Oracle / Pixel Codec</li><li>ASI goal → plan → execute on OS</li><li>HyperFS · Images · Audio · App Builder · Automation · Notifications</li></ul><p style="font-size:0.72rem;color:var(--dim)">See <b>Docs</b> for full API. Open <b>Examples</b> for runnable scripts.</p></div>`); }
+
+function appNotif() { const r = createWin('notifications', 'Notifications', 380, 320, `<div class="pad"><h3>Notification History</h3><div id="notif-history" style="max-height:260px;overflow-y:auto;"></div></div>`); const container = r.el.querySelector('#notif-history'); function render() { container.innerHTML = S.notifications.slice().reverse().map(n => { const time = new Date(n.time).toLocaleTimeString(); const cls = n.type || 'info'; return `<div class="notif-item ${cls}">${n.title ? '<strong>'+n.title+'</strong> ' : ''}${n.msg}<span class="time">${time}</span></div>`; }).join('') || '<div style="color:var(--dim);padding:12px;">No notifications</div>'; } render(); const interval = setInterval(() => { if (document.body.contains(r.el)) render(); else clearInterval(interval); }, 2000); }
+
+// ===================================================================
+//  BOOT
+// ===================================================================
+function clock() { const t = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); document.getElementById('tclock').textContent = t; document.getElementById('bclock').textContent = t; }
+setInterval(clock, 1000);
+clock();
+
+buildIcons();
+buildStart('');
+buildPins();
+netScan();
+updateBadge();
+updateBTBadge();
+
+// Run startup automations
+setTimeout(() => {
+  S.automations.forEach(rule => {
+    if (rule.enabled && rule.trigger.type === 'startup') {
+      setTimeout(() => executeAutomation(rule), 500);
+    }
+  });
+}, 1000);
+
+// Expose automation functions globally
+window.addAutomation = addAutomation;
+window.deleteAutomation = deleteAutomation;
+window.toggleAutomation = toggleAutomation;
+window.runAutomation = runAutomation;
+window.executeAction = executeAction;
+window.triggerAutomationEvent = triggerAutomationEvent;
+window.calculateNextRun = calculateNextRun;
+window.addNotification = addNotification;
+
+window.A = { open, toggleStart, S, toast, mountRealFolder, scanBluetooth, addAutomation, runAutomation, toggleNotif, clearNotifs, toggleTheme };
+
+log('Æther OS Ultimate ready — open Examples or Playground', 'INFO');
+try { bootAetherCore(function(m){ log(String(m), 'INFO'); }); } catch(e) {}
+try { Heart.beat(); Brain.think('boot'); VHWOracle.query('health'); KOS.load(); } catch(e) {}
+console.log('Æther OS Ultimate — language + desktop ready');
+</script>
+</body>
+</html>
