@@ -8,9 +8,9 @@ fn token(kind,value,line,col)
   return put(t,"col",col)
 fn isAlpha(c)
   let letters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
-  return contains(letters,c)
+  return indexOf(letters,c) >= 0
 fn isDigit(c)
-  return contains("0123456789",c)
+  return indexOf("0123456789",c) >= 0
 fn isSpace(c)
   return c==" " || c=="\t" || c=="\r"
 fn isTwoCharOp(a,b)

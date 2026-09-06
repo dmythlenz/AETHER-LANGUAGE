@@ -1,10 +1,10 @@
 # ============================================================================
-# AETHER UNIVERSAL FINAL v3.0.1
+# AETHER UNIVERSAL FINAL v3.0.2
 # One-language application fabric: language, OS, games, AI/LLM, web, mobile,
 # desktop, data, networking, storage, observability and deterministic builds.
 # All implementation in AETHER. Host calls are isolated behind adapters.
 # ============================================================================
-let AETHER_VERSION = "3.0.1"
+let AETHER_VERSION = "3.0.2"
 let AETHER_ABI = "AETHER-UNIVERSAL/3"
 
 # ---- common values ----------------------------------------------------------
@@ -38,6 +38,8 @@ fn kind(v)
   if t == "number" return "Number"
   if t == "string" return "String"
   if t == "boolean" return "Bool"
+  if t == "list" return "List"
+  if t == "dict" return "Dict"
   if t == "array" return "List"
   if t == "object" return "Dict"
   return str(t)
@@ -224,7 +226,8 @@ fn route(method,path)
 fn httpRequest(method,url,body)
   let r=route(method,url)
   r=put(r,"body",body)
-  r=put(r,"status",200)
+  r=put(r,"status",0)
+  r=put(r,"requiresAdapter",true)
   return ok(r)
 
 # ---- game engine: ECS + deterministic fixed-step loop ----------------------
@@ -283,6 +286,7 @@ fn dot(a,b)
 fn matmul(a,b)
   let sa=get(a,"shape")
   let sb=get(b,"shape")
+  if len(sa)!=2 || len(sb)!=2 return err("SHAPE","matmul requires rank-2 tensors")
   if get(sa,1)!=get(sb,0) return err("SHAPE","matmul")
   let ar=get(sa,0)
   let ac=get(sa,1)
@@ -314,12 +318,71 @@ fn normalize(v)
     push(out,get(v,i)/s)
     i+=1
   return ok(out)
-fn attention(q,k,v)
-  let d=dot(q,k)
-  if !isOk(d) return d
-  let w=normalize([get(d,"value")])
-  if !isOk(w) return w
-  return ok(tensor([1], [get(get(w,"value"),0)*get(v,0)]))
+fn normL2(v)
+  mut s=0
+  let i=0
+  while i<len(v)
+    let x=get(v,i)
+    s+=x*x
+    i+=1
+  if s==0 return err("ZERO_NORM","normL2")
+  return ok(sqrt(s))
+fn softmax(v)
+  if len(v)==0 return err("EMPTY","softmax")
+  mut m=get(v,0)
+  let i=1
+  while i<len(v)
+    if get(v,i)>m m=get(v,i)
+    i+=1
+  mut ex=[]
+  mut z=0
+  let j=0
+  while j<len(v)
+    let e=exp(get(v,j)-m)
+    push(ex,e)
+    z+=e
+    j+=1
+  if z==0 return err("SOFTMAX","underflow")
+  mut out=[]
+  let k=0
+  while k<len(ex)
+    push(out,get(ex,k)/z)
+    k+=1
+  return ok(out)
+# q is [D], keys is tensor [N,D], values is tensor [N,V].
+fn attention(q,keys,values)
+  let ks=get(keys,"shape")
+  let vs=get(values,"shape")
+  if len(ks)!=2 || len(vs)!=2 return err("SHAPE","attention requires rank-2 keys/values")
+  if len(q)!=get(ks,1) return err("SHAPE","query/key width mismatch")
+  if get(ks,0)!=get(vs,0) return err("SHAPE","key/value row mismatch")
+  let rows=get(ks,0)
+  let width=get(ks,1)
+  let outWidth=get(vs,1)
+  mut scores=[]
+  let scale=sqrt(width)
+  let qi=0
+  while qi<rows
+    mut score=0
+    let qj=0
+    while qj<width
+      score+=get(q,qj)*get(get(keys,"data"),qi*width+qj)
+      qj+=1
+    push(scores,score/scale)
+    qi+=1
+  let probs=softmax(scores)
+  if !isOk(probs) return probs
+  mut out=[]
+  let c=0
+  while c<outWidth
+    mut total=0
+    let r=0
+    while r<rows
+      total+=get(get(probs,"value"),r)*get(get(values,"data"),r*outWidth+c)
+      r+=1
+    push(out,total)
+    c+=1
+  return ok(tensor([1,outWidth],out))
 fn llmConfig(name,dim,layers,heads)
   let c=put({},"name",name)
   c=put(c,"dim",dim)
@@ -331,8 +394,13 @@ fn llmRoute(intent)
   if startsWith(intent,"retrieve:") return "rag.retrieve"
   if startsWith(intent,"code:") return "llm.code"
   return "llm.general"
+fn llmInferenceRequest(cfg,input)
+  let r=put({},"model",get(cfg,"name"))
+  r=put(r,"input",input)
+  r=put(r,"route",llmRoute("chat:"+str(input)))
+  return put(r,"requiresAdapter",true)
 fn llmInfer(cfg,input)
-  return ok(put(put({},"model",get(cfg,"name")),"input",input))
+  return err("ADAPTER_REQUIRED","LLM weight execution requires a tensor/model backend")
 
 # ---- AI agent/tool orchestration -------------------------------------------
 fn tool(name, capability)
@@ -398,7 +466,7 @@ fn lowerBinary(op,a,b)
   let t="Number"
   return ir("bin:"+op,[a,b],t)
 fn compilePlan(src,target)
-  let m=manifest("aether-app","3.0.1",target,"main.ae")
+  let m=manifest("aether-app","3.0.2",target,"main.ae")
   let p=packagePlan(m)
   return put(put(put({},"source",src),"target",target),"pipeline",p)
 
@@ -432,7 +500,7 @@ fn selfTest()
   let checks=[]
   push(checks,get(c,"value")==5)
   push(checks,isOk(r))
-  push(checks,get(get(r,"value"),"data") != 0)
+  push(checks,get(get(get(r,"value"),"data"),0)==23)
   push(checks,get(targetCapabilities("android"),0)=="mobile")
   mut pass=0
   let i=0

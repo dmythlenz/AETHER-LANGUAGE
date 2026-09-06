@@ -1,6 +1,6 @@
 let project = {}
 project = put(project,"name","AETHER UNIVERSAL FINAL")
-project = put(project,"version","3.0.1")
+project = put(project,"version","3.0.2")
 project = put(project,"language","AETHER")
 project = put(project,"policy","AETHER-only source; concrete host adapters only at execution boundary")
 project = put(project,"targets",["wasm","native","android","windows","linux","embedded","virtual"])
