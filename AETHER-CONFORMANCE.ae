@@ -1,0 +1,17 @@
+# Honest conformance matrix. 'native' means implemented in AETHER source.
+# 'adapter-required' means the language contract exists but a host backend must execute it.
+# 'planned' means architecture is specified but runtime support is not complete.
+fn conformance()
+  let rows=[]
+  push(rows,{"domain":"language","status":"native","note":"existing AETHER parser/runtime + extended IR records"})
+  push(rows,{"domain":"dataflow","status":"native","note":"deterministic DAG scheduler"})
+  push(rows,{"domain":"OS","status":"adapter-required","note":"process/resource/IPC model"})
+  push(rows,{"domain":"game","status":"adapter-required","note":"ECS + deterministic fixed-step simulation; graphics/audio/input adapters required"})
+  push(rows,{"domain":"LLM","status":"adapter-required","note":"tensor/attention/agent substrate; model weights/backend required"})
+  push(rows,{"domain":"web","status":"adapter-required","note":"HTTP route/request model; network adapter required"})
+  push(rows,{"domain":"android","status":"adapter-required","note":"Aether manifest/build graph; Android SDK/toolchain required"})
+  push(rows,{"domain":"desktop","status":"adapter-required","note":"application/build graph; native window/graphics backend required"})
+  push(rows,{"domain":"embedded","status":"adapter-required","note":"IR/resource contract; device backend required"})
+  push(rows,{"domain":"quantum","status":"existing","note":"original AETHER/KAE quantum primitives"})
+  return rows
+print str(conformance())

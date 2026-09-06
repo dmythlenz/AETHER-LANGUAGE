@@ -1,8 +1,9 @@
 let project = {}
 project = put(project,"name","AETHER UNIVERSAL FINAL")
-project = put(project,"version","3.0.0")
+project = put(project,"version","3.0.1")
 project = put(project,"language","AETHER")
-project = put(project,"policy","AETHER-only implementation; host adapters only at execution boundary")
+project = put(project,"policy","AETHER-only source; concrete host adapters only at execution boundary")
 project = put(project,"targets",["wasm","native","android","windows","linux","embedded","virtual"])
 project = put(project,"domains",["language","os","game","ai","llm","web","desktop","mobile","data","network","quantum"])
+project = put(project,"status","architecturally integrated; target adapters required where noted by conformance")
 print str(project)

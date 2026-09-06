@@ -1,10 +1,10 @@
 # ============================================================================
-# AETHER UNIVERSAL FINAL v3.0
+# AETHER UNIVERSAL FINAL v3.0.1
 # One-language application fabric: language, OS, games, AI/LLM, web, mobile,
 # desktop, data, networking, storage, observability and deterministic builds.
 # All implementation in AETHER. Host calls are isolated behind adapters.
 # ============================================================================
-let AETHER_VERSION = "3.0.0"
+let AETHER_VERSION = "3.0.1"
 let AETHER_ABI = "AETHER-UNIVERSAL/3"
 
 # ---- common values ----------------------------------------------------------
@@ -26,13 +26,11 @@ fn unwrap(r)
     return get(r, "value")
   return 0
 
-fn hashText(s)
-  mut h = 2166136261
-  let i = 0
-  while i < len(s)
-    h = (h * 16777619 + int(indexOf("0123456789abcdefghijklmnopqrstuvwxyz", lower(substr(s, i, 1)))) + 1) % 2147483647
-    i += 1
-  return "ae3:" + str(h)
+fn fingerprint(s)
+  let n=len(s)
+  let p=substr(s,0,min(n,8))
+  return "ae3:"+str(n)+":"+p
+
 
 # ---- type/contracts ---------------------------------------------------------
 fn kind(v)
@@ -52,7 +50,7 @@ fn require(v, wanted)
 fn cap(name, scope)
   let c = put({}, "name", name)
   c = put(c, "scope", scope)
-  return put(c, "id", "cap:" + hashText(name + ":" + scope))
+  return put(c, "id", "cap:" + fingerprint(name + ":" + scope))
 fn hasCap(caps, name, scope)
   let i = 0
   while i < len(caps)
@@ -95,7 +93,7 @@ fn bus()
   return put(put({}, "clock", 0), "events", [])
 fn emit(b, topic, payload)
   let n = get(b, "clock") + 1
-  let e = put({}, "id", "evt:" + hashText(topic + ":" + str(n)))
+  let e = put({}, "id", "evt:" + fingerprint(topic + ":" + str(n)))
   e = put(e, "seq", n)
   e = put(e, "topic", topic)
   e = put(e, "payload", payload)
@@ -171,10 +169,14 @@ fn execute(op,args,ds)
   if op=="div"
     if get(ds,1)==0 return err("DIV0","division by zero")
     return ok(get(ds,0)/get(ds,1))
-  if op=="sum" return ok(sum(get(ds,0)))
-  if op=="mean"
-    if len(get(ds,0))==0 return err("EMPTY","mean")
-    return ok(mean(get(ds,0)))
+  if op=="sum"
+    mut total=0
+    let xs=get(ds,0)
+    let i=0
+    while i<len(xs)
+      total+=get(xs,i)
+      i+=1
+    return ok(total)
   return err("OP","unknown " + str(op))
 fn stepGraph(g)
   let n=choose(g)
@@ -218,7 +220,7 @@ fn kvGet(s,k)
 fn route(method,path)
   let r=put({},"method",method)
   r=put(r,"path",path)
-  return put(r,"id","route:"+hashText(method+path))
+  return put(r,"id","route:"+fingerprint(method+path))
 fn httpRequest(method,url,body)
   let r=route(method,url)
   r=put(r,"body",body)
@@ -252,7 +254,7 @@ fn gameStep(w,dt)
     if get(e,"velocity") != 0 && get(e,"position") != 0
       let p=get(e,"position")
       let v=get(e,"velocity")
-      e=put(e,"position",p+v*dt)
+      e=put(e,"position",{"x":get(p,"x")+get(v,"x")*dt,"y":get(p,"y")+get(v,"y")*dt,"z":get(p,"z")+get(v,"z")*dt})
       put(get(w,"entities"),i,e)
     i+=1
   return w
@@ -299,26 +301,25 @@ fn matmul(a,b)
       c+=1
     r+=1
   return ok(tensor([ar,bc],out))
-fn softmax(v)
-  mut ex=[]
+fn normalize(v)
   mut s=0
+  let i0=0
+  while i0<len(v)
+    s+=get(v,i0)
+    i0+=1
+  if s==0 return err("ZERO_NORM","normalize")
+  mut out=[]
   let i=0
   while i<len(v)
-    let x=exp(get(v,i))
-    push(ex,x)
-    s+=x
+    push(out,get(v,i)/s)
     i+=1
-  mut out=[]
-  i=0
-  while i<len(ex)
-    push(out,get(ex,i)/s)
-    i+=1
-  return out
+  return ok(out)
 fn attention(q,k,v)
   let d=dot(q,k)
   if !isOk(d) return d
-  let w=softmax([get(d,"value")])
-  return ok(tensor([1], [get(w,0)*get(v,0)]))
+  let w=normalize([get(d,"value")])
+  if !isOk(w) return w
+  return ok(tensor([1], [get(get(w,"value"),0)*get(v,0)]))
 fn llmConfig(name,dim,layers,heads)
   let c=put({},"name",name)
   c=put(c,"dim",dim)
@@ -388,7 +389,7 @@ fn ir(op,args,typ)
   let n=put({},"op",op)
   n=put(n,"args",args)
   n=put(n,"type",typ)
-  return put(n,"id","ir:"+hashText(str(op)+str(args)+str(typ)))
+  return put(n,"id","ir:"+fingerprint(str(op)+str(args)+str(typ)))
 fn typeCheck(v,wanted)
   return require(v,wanted)
 fn lowerLiteral(v)
@@ -397,7 +398,7 @@ fn lowerBinary(op,a,b)
   let t="Number"
   return ir("bin:"+op,[a,b],t)
 fn compilePlan(src,target)
-  let m=manifest("aether-app","3.0.0",target,"main.ae")
+  let m=manifest("aether-app","3.0.1",target,"main.ae")
   let p=packagePlan(m)
   return put(put(put({},"source",src),"target",target),"pipeline",p)
 
@@ -409,7 +410,7 @@ fn metric(name,value)
 fn trace(name,payload)
   let t=put({},"name",name)
   t=put(t,"payload",payload)
-  return put(t,"id","trace:"+hashText(name+str(payload)))
+  return put(t,"id","trace:"+fingerprint(name+str(payload)))
 fn health(name,okv,message)
   let h=put({},"service",name)
   h=put(h,"ok",okv)
@@ -417,7 +418,7 @@ fn health(name,okv,message)
 
 # ---- deterministic snapshot ------------------------------------------------
 fn snapshot(name,state)
-  let id="snap:"+hashText(name+str(state))
+  let id="snap:"+fingerprint(name+str(state))
   return put(put({},"id",id),"state",state)
 
 # ---- universal self-test ---------------------------------------------------

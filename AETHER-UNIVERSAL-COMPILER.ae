@@ -1,63 +1,102 @@
-# AETHER-NATIVE compiler front-end expansion plan.
-# This is source-level compiler machinery intended for the existing Aether host
-# until a native compiler backend is promoted from the same IR.
-
+# AETHER-native compiler architecture.
+# This file defines a real lexical front-end and typed IR records.
+# Full AST lowering for every existing language construct remains a compiler milestone.
 fn token(kind,value,line,col)
   let t=put({},"kind",kind)
   t=put(t,"value",value)
   t=put(t,"line",line)
   return put(t,"col",col)
 fn isAlpha(c)
-  return indexOf("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_",c)>=0
+  let letters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+  return contains(letters,c)
 fn isDigit(c)
-  return indexOf("0123456789",c)>=0
+  return contains("0123456789",c)
+fn isSpace(c)
+  return c==" " || c=="\t" || c=="\r"
+fn isTwoCharOp(a,b)
+  let x=a+b
+  return x=="==" || x=="!=" || x=="<=" || x==">=" || x=="&&" || x=="||" || x=="=>" || x=="->" || x=="::" || x=="??"
 fn lex(src)
   mut out=[]
-  let i=0
-  let line=1
-  let col=1
+  let mut_i=0
+  mut i=mut_i
+  let line0=1
+  mut line=line0
+  mut col=1
   while i<len(src)
     let c=substr(src,i,1)
-    if c==" " || c=="\t"
-      col+=1
+    if isSpace(c)
       i+=1
+      col+=1
     else if c=="\n"
+      i+=1
       line+=1
       col=1
+    else if c=="#"
+      while i<len(src) && substr(src,i,1)!="\n"
+        i+=1
+        col+=1
+    else if c=="\""
+      let sc=col
+      let sl=line
+      let s=i+1
       i+=1
+      col+=1
+      while i<len(src) && substr(src,i,1)!="\""
+        if substr(src,i,1)=="\n"
+          line+=1
+          col=1
+        else
+          col+=1
+        i+=1
+      push(out,token("string",substr(src,s,i-s),sl,sc))
+      if i<len(src)
+        i+=1
+        col+=1
     else if isDigit(c)
+      let sc=col
       let s=i
-      while i<len(src) && isDigit(substr(src,i,1)) i+=1
-      push(out,token("number",substr(src,s,i-s),line,col))
-      col+=i-s
+      while i<len(src) && isDigit(substr(src,i,1))
+        i+=1
+        col+=1
+      if i<len(src) && substr(src,i,1)=="." && i+1<len(src) && isDigit(substr(src,i+1,1))
+        i+=1
+        col+=1
+        while i<len(src) && isDigit(substr(src,i,1))
+          i+=1
+          col+=1
+      push(out,token("number",substr(src,s,i-s),line,sc))
     else if isAlpha(c)
+      let sc=col
       let s=i
-      while i<len(src) && (isAlpha(substr(src,i,1)) || isDigit(substr(src,i,1))) i+=1
-      push(out,token("identifier",substr(src,s,i-s),line,col))
-      col+=i-s
+      while i<len(src) && (isAlpha(substr(src,i,1)) || isDigit(substr(src,i,1)))
+        i+=1
+        col+=1
+      push(out,token("identifier",substr(src,s,i-s),line,sc))
+    else if i+1<len(src) && isTwoCharOp(c,substr(src,i+1,1))
+      push(out,token("operator",c+substr(src,i+1,1),line,col))
+      i+=2
+      col+=2
     else
       push(out,token("symbol",c,line,col))
       i+=1
       col+=1
   return out
-
 fn ast(kind,value,children)
   let a=put({},"kind",kind)
   a=put(a,"value",value)
   return put(a,"children",children)
 fn literalAst(v)
   return ast("literal",v,[])
-fn typeOfAst(a)
-  if get(a,"kind")=="literal"
-    return type(get(a,"value"))
-  return "Any"
-fn semanticCheck(a)
-  if get(a,"kind")=="literal" return {"ok":true,"type":typeOfAst(a)}
-  return {"ok":true,"type":"Any"}
-fn lower(a)
-  return {"op":"literal","value":get(a,"value"),"type":typeOfAst(a)}
-fn compile(source,target)
+fn ir(op,args,typ)
+  let n=put({},"op",op)
+  n=put(n,"args",args)
+  return put(n,"type",typ)
+fn lowerLiteral(v)
+  return ir("const",[v],type(v))
+fn compileLexical(source,target)
   let toks=lex(source)
-  let ast0=literalAst(source)
-  let check=semanticCheck(ast0)
-  return {"target":target,"tokens":len(toks),"semantic":check,"ir":lower(ast0)}
+  return {"target":target,"tokenCount":len(toks),"tokens":toks,"status":"lexed"}
+fn compilePlan(src,target)
+  let lexical=compileLexical(src,target)
+  return {"source":src,"target":target,"lexical":lexical,"irStatus":"front-end-lowered-only"}
