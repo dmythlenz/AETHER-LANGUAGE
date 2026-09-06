@@ -1,0 +1,10 @@
+# This file is intentionally AETHER source: the specification is executable data.
+fn architecture()
+  return [
+    "Language -> AST -> Semantic -> AETHER-IR -> Optimizer -> Backend",
+    "AETHER-IR -> WASM / Native / Android / Embedded / Virtual",
+    "Universal Runtime -> OS / Game / LLM / Web / Desktop / Mobile",
+    "HyperFS / Fabric / KAE / VHW remain substrate adapters",
+    "Capabilities are explicit; deterministic IDs/snapshots enable reproducibility"
+  ]
+print str(architecture())

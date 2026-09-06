@@ -1,0 +1,18 @@
+# Deterministic ECS/game runtime. Rendering/audio/input remain target adapters.
+fn gameTransform(x,y,z)
+  return {"x":x,"y":y,"z":z}
+fn gameVelocity(x,y,z)
+  return {"x":x,"y":y,"z":z}
+fn gameEntity(id,x,y,z)
+  let e=entity(id)
+  e=addComponent(e,"position",gameTransform(x,y,z))
+  return addComponent(e,"velocity",gameVelocity(0,0,0))
+fn gameSpawn(w,id,x,y,z)
+  return addEntity(w,gameEntity(id,x,y,z))
+fn gameLoop(w,frames,dt)
+  let i=0
+  mut s=w
+  while i<frames
+    s=gameStep(s,dt)
+    i+=1
+  return s

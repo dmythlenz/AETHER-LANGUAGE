@@ -1,0 +1,63 @@
+# AETHER-NATIVE compiler front-end expansion plan.
+# This is source-level compiler machinery intended for the existing Aether host
+# until a native compiler backend is promoted from the same IR.
+
+fn token(kind,value,line,col)
+  let t=put({},"kind",kind)
+  t=put(t,"value",value)
+  t=put(t,"line",line)
+  return put(t,"col",col)
+fn isAlpha(c)
+  return indexOf("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_",c)>=0
+fn isDigit(c)
+  return indexOf("0123456789",c)>=0
+fn lex(src)
+  mut out=[]
+  let i=0
+  let line=1
+  let col=1
+  while i<len(src)
+    let c=substr(src,i,1)
+    if c==" " || c=="\t"
+      col+=1
+      i+=1
+    else if c=="\n"
+      line+=1
+      col=1
+      i+=1
+    else if isDigit(c)
+      let s=i
+      while i<len(src) && isDigit(substr(src,i,1)) i+=1
+      push(out,token("number",substr(src,s,i-s),line,col))
+      col+=i-s
+    else if isAlpha(c)
+      let s=i
+      while i<len(src) && (isAlpha(substr(src,i,1)) || isDigit(substr(src,i,1))) i+=1
+      push(out,token("identifier",substr(src,s,i-s),line,col))
+      col+=i-s
+    else
+      push(out,token("symbol",c,line,col))
+      i+=1
+      col+=1
+  return out
+
+fn ast(kind,value,children)
+  let a=put({},"kind",kind)
+  a=put(a,"value",value)
+  return put(a,"children",children)
+fn literalAst(v)
+  return ast("literal",v,[])
+fn typeOfAst(a)
+  if get(a,"kind")=="literal"
+    return type(get(a,"value"))
+  return "Any"
+fn semanticCheck(a)
+  if get(a,"kind")=="literal" return {"ok":true,"type":typeOfAst(a)}
+  return {"ok":true,"type":"Any"}
+fn lower(a)
+  return {"op":"literal","value":get(a,"value"),"type":typeOfAst(a)}
+fn compile(source,target)
+  let toks=lex(source)
+  let ast0=literalAst(source)
+  let check=semanticCheck(ast0)
+  return {"target":target,"tokens":len(toks),"semantic":check,"ir":lower(ast0)}

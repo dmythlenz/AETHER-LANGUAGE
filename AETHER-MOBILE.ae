@@ -1,0 +1,11 @@
+# Mobile/APK packaging model. Produces a deterministic build plan/manifest;
+# signing, SDK and platform packaging are performed by the selected host backend.
+fn androidApp(name,version,entry)
+  let a=app(name,"android")
+  a=put(a,"version",version)
+  a=put(a,"entry",entry)
+  a=permission(a,"INTERNET")
+  return permission(a,"VIBRATE")
+fn androidBuildPlan(a)
+  let m=manifest(get(a,"name"),get(a,"version"),"android",get(a,"entry"))
+  return packagePlan(m)

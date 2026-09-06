@@ -1,0 +1,6 @@
+fn desktopApp(name,target,entry)
+  let a=app(name,target)
+  return put(a,"entry",entry)
+fn desktopBuildPlan(a)
+  let m=manifest(get(a,"name"),get(a,"version"),get(a,"target"),get(a,"entry"))
+  return packagePlan(m)

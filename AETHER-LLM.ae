@@ -1,0 +1,12 @@
+# LLM/AI-native substrate: tensors, routing, memory, tools, agents.
+fn embedding(values)
+  return tensor([1,len(values)],values)
+fn llmMemory()
+  return kvStore()
+fn remember(mem,key,value)
+  return kvPut(mem,key,value)
+fn recall(mem,key)
+  return kvGet(mem,key)
+fn makeAgent(name)
+  let tools=[tool("search","net"),tool("compute","compute"),tool("memory","storage")]
+  return agent(name,tools)

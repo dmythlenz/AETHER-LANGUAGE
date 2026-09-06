@@ -1,0 +1,9 @@
+# Full-stack HTTP abstraction: routes + request/response + app manifest.
+fn webApp(name)
+  return app(name,"server")
+fn webRoute(method,path)
+  return route(method,path)
+fn webGet(path)
+  return httpRequest("GET",path,{})
+fn webPost(path,body)
+  return httpRequest("POST",path,body)

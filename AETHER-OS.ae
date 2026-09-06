@@ -1,0 +1,20 @@
+# AETHER OS personality: process, memory, storage, IPC, scheduler.
+fn osMemory(capacity)
+  return resource("vRAM",capacity)
+fn osStorage()
+  return kvStore()
+fn osProcessTable()
+  return []
+fn osSpawn(table,name)
+  let p=process(len(table)+1,name,"created")
+  push(table,p)
+  return table
+fn osSchedule(table)
+  let i=0
+  while i<len(table)
+    let p=get(table,i)
+    if get(p,"state")=="created" put(table,i,processStart(p))
+    i+=1
+  return table
+fn osIpc(b,from,to,message)
+  return emit(b,"ipc",{"from":from,"to":to,"message":message})
