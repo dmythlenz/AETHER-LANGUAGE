@@ -1,0 +1,30 @@
+# AETHER UNIVERSAL v5 — deterministic concurrency primitives
+fn CONC_new()
+  return {"actors":[],"channels":[],"clock":0}
+fn CONC_actor(c,id,state)
+  push(get(c,"actors"),{"id":id,"state":state,"mailbox":[]})
+  return c
+fn CONC_send(c,id,msg)
+  let i=0
+  while i<len(get(c,"actors"))
+    let a=get(get(c,"actors"),i)
+    if get(a,"id")==id
+      push(get(a,"mailbox"),msg)
+      put(get(c,"actors"),i,a)
+      return put(c,"clock",get(c,"clock")+1)
+    i+=1
+  return c
+fn CONC_channel(name,capacity)
+  return {"name":name,"capacity":capacity,"queue":[]}
+fn CONC_ready(ch)
+  return len(get(ch,"queue"))<get(ch,"capacity")
+fn CONC_push(ch,v)
+  if !CONC_ready(ch) return U_err("CHANNEL_FULL",get(ch,"name"))
+  push(get(ch,"queue"),v)
+  return U_ok(ch)
+fn CONC_pop(ch)
+  if len(get(ch,"queue"))==0 return U_err("CHANNEL_EMPTY",get(ch,"name"))
+  return U_ok(shift(get(ch,"queue")))
+fn CONC_schedule(tasks)
+  # Stable lexicographic task ordering gives deterministic single-threaded semantics.
+  return sort(tasks)

@@ -1,0 +1,22 @@
+# EGI/AGI orchestration substrate. This is a control architecture, not a claim of human-level AGI.
+fn EGI_new(name)
+  return {"name":name,"goal":"","working":{},"memory":AI_memory(),"history":[],"step":0}
+fn EGI_setGoal(e,goal)
+  return put(e,"goal",goal)
+fn EGI_observe(e,state)
+  e=put(e,"working",state)
+  push(get(e,"history"),{"kind":"observe","state":state,"step":get(e,"step")})
+  return e
+fn EGI_plan(e)
+  let plan=["observe","retrieve","reason","verify","act","observe"]
+  push(get(e,"history"),{"kind":"plan","plan":plan,"goal":get(e,"goal")})
+  return plan
+fn EGI_act(e,action)
+  let r=U_request("egi.action",{"goal":get(e,"goal"),"action":action},"compute")
+  push(get(e,"history"),{"kind":"action","request":r})
+  return r
+fn EGI_step(e,state)
+  e=put(e,"step",get(e,"step")+1)
+  e=EGI_observe(e,state)
+  let plan=EGI_plan(e)
+  return {"entity":e,"next":get(plan,0),"step":get(e,"step")}

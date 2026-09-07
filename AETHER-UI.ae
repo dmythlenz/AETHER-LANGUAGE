@@ -1,0 +1,9 @@
+# Cross-target UI declarative model
+fn UI_node(kind,props,children)
+  return {"kind":kind,"props":props,"children":children}
+fn UI_text(text)
+  return UI_node("text",{"text":text},[])
+fn UI_button(label,action)
+  return UI_node("button",{"label":label,"action":action},[])
+fn UI_app(name,root)
+  return {"name":name,"root":root,"model":"AETHER-UI/1"}

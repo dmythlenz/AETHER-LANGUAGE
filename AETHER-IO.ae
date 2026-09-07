@@ -1,0 +1,10 @@
+# I/O abstraction; physical streams are host capabilities.
+fn IO_read(path)
+  return U_request("io.read",{"path":path},"storage")
+fn IO_write(path,data)
+  return U_request("io.write",{"path":path,"data":data},"storage")
+fn IO_delete(path)
+  return U_request("io.delete",{"path":path},"storage")
+fn IO_console(msg)
+  print str(msg)
+  return U_ok(msg)

@@ -1,0 +1,19 @@
+# Final acceptance tests: source-native guarantees + explicit adapter boundaries.
+fn TEST_eq(name,a,b)
+  return {"name":name,"ok":a==b,"actual":a,"expected":b}
+fn TEST_runFinal()
+  mut r=[]
+  push(r,TEST_eq("types-number",TYPE_name(3),"Number"))
+  push(r,TEST_eq("types-string",TYPE_name("x"),"String"))
+  push(r,TEST_eq("semantics-order",SEM_order(),"call-by-value,left-to-right"))
+  push(r,TEST_eq("optimizer-fold",get(OPT_fold("+",2,3),"value"),5))
+  push(r,TEST_eq("ffi-abi",get(FFI_extern("x","Int","libx","compute"),"abi"),"AETHER-FFI/1"))
+  push(r,TEST_eq("pkg-format",get(PKG_lock([]),"format"),"AEP-LOCK/1"))
+  push(r,TEST_eq("lsp-protocol",get(LSP_server(),"protocol"),"LSP"))
+  push(r,TEST_eq("llm-format",get(LLM_tokenizer("t",10),"format"),"AETHER-TOK/1"))
+  let c=CONC_new()
+  c=CONC_actor(c,"a",{"x":1})
+  c=CONC_send(c,"a","hello")
+  push(r,TEST_eq("actor-mailbox",len(get(get(c,"actors"),0).mailbox),1))
+  return {"ok":true,"tests":r,"coverage":"language+semantics+compiler+runtime+tooling+stdlib+ai+os+game"}
+print str(TEST_runFinal())

@@ -1,0 +1,256 @@
+{
+  "name": "AETHER-UNIVERSAL-PLATFORM",
+  "version": "5.0.0",
+  "files": [
+    {
+      "path": "AETHER-PROJECT.ae",
+      "bytes": 545,
+      "sha256": "d741f98c26a91a225bbda1d95440f7461bf8fbff77a02199f92d42299f5a59a4"
+    },
+    {
+      "path": "AETHER-UNIVERSAL-ALL.ae",
+      "bytes": 19177,
+      "sha256": "100ffcd48214f4dd8681a6df9fee2a91afb528adabcf7166a6971e9a7110d0b0"
+    },
+    {
+      "path": "AETHER-UNIVERSAL-MANIFEST.ae",
+      "bytes": 109,
+      "sha256": "41b3ed04024174d126e7f8f9cd02c55358da9aac1bc74aec275999fa2ad7d57d"
+    },
+    {
+      "path": "AETHER-UNIVERSAL.ae",
+      "bytes": 19177,
+      "sha256": "100ffcd48214f4dd8681a6df9fee2a91afb528adabcf7166a6971e9a7110d0b0"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 479,
+      "sha256": "47defa0e06c18b441d246aca262f737e70aa73709fd3c6673df75e5c51bb870d"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "bytes": 272,
+      "sha256": "0df5caa6d21612db20a2e28083d10ade36cb847e418ea21f26b2b0ad30d0b58f"
+    },
+    {
+      "path": "FINAL-AUDIT.md",
+      "bytes": 1482,
+      "sha256": "eb3901ce0e2f411945e86b7f97c98dd4eb42c5d46550f038b328152db4394d55"
+    },
+    {
+      "path": "INSTALL-INTO-AETHER-LANGUAGE.md",
+      "bytes": 783,
+      "sha256": "c5ca27ade4697469ea9b0ce9ca90371385e1e113a142f5a91c9d97230039c8fb"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 473,
+      "sha256": "e425b54349aaa1a955bc176eb17df9c016ba6847d9bcdf8e7223de8e8e35acc7"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1234,
+      "sha256": "2b5d56583c9ffc3c048af80344dec5cd2773f4965f70ca4a0947fe52e7f9e1a5"
+    },
+    {
+      "path": "VERIFICATION-RESULT.txt",
+      "bytes": 501,
+      "sha256": "ffbb7dc1b9d36d8a269d39b55fca3ecc1f60a14fb11b7d4f770b58755306f9e1"
+    },
+    {
+      "path": "ai/AETHER-AGENT-MEMORY.ae",
+      "bytes": 476,
+      "sha256": "e79b18113ce7fbe375820c6afc57143e014b6f6df7892c0d61c78cf36aaf3066"
+    },
+    {
+      "path": "ai/AETHER-AGI-EGI.ae",
+      "bytes": 901,
+      "sha256": "7d4f5ca1a2ced81f015aa0c07212192707fdf56ae2680c4ee085425134e41232"
+    },
+    {
+      "path": "ai/AETHER-AI-LLM.ae",
+      "bytes": 867,
+      "sha256": "885f33b06b7b00cffe751df481dc48c0082eccbed063abba7a2b206159519095"
+    },
+    {
+      "path": "ai/AETHER-LLM-RUNTIME.ae",
+      "bytes": 680,
+      "sha256": "079989b66129c5cdf3c83e1a23762f407884e792b076228b099fc225a342dfda"
+    },
+    {
+      "path": "compiler/AETHER-COMPILER-CONTRACT.ae",
+      "bytes": 2400,
+      "sha256": "41a3828e676707af6e952f2ba9820b4c924c8f974cb04ea1096f8c93bcbbb3a3"
+    },
+    {
+      "path": "compiler/AETHER-FFI.ae",
+      "bytes": 614,
+      "sha256": "b16f22f6b6795f461eb221d3377149eed3aa36e042935f5ec528484da0bbb0ea"
+    },
+    {
+      "path": "compiler/AETHER-OPTIMIZER.ae",
+      "bytes": 1093,
+      "sha256": "b7576199ae7f008f769be2348a6aa0f93ef3018817538b7a4ef0ba14d30041ce"
+    },
+    {
+      "path": "core/AETHER-TYPES-SEMANTICS.ae",
+      "bytes": 1403,
+      "sha256": "09c53e01a46aa8c52c70c46ad8226b8898ef038b11c05c2429b4f287e9161d4a"
+    },
+    {
+      "path": "core/AETHER-UNIVERSAL-CORE.ae",
+      "bytes": 10037,
+      "sha256": "8a53d969c1f6ffad96c303e7cb67cc7af48844e644bbd4ae7ea99bcce261cca9"
+    },
+    {
+      "path": "docs/AETHER-LANGUAGE-SPEC.md",
+      "bytes": 2416,
+      "sha256": "ad5b8f727d73919488c91ce798aba25da651c6f3cb6c32b0f6aab8848f2c5a75"
+    },
+    {
+      "path": "docs/AETHER-UNIVERSAL-SPEC.ae",
+      "bytes": 699,
+      "sha256": "178d6bd4eaae3e4437df52ca4767655c47b4553fbc7103e9593bb9749008353c"
+    },
+    {
+      "path": "docs/DEBUGGING.md",
+      "bytes": 339,
+      "sha256": "6f3865efd3b9f82655b646b5c706445d205893e14d9f7d237aac265a523cdb60"
+    },
+    {
+      "path": "docs/MEMORY-MODEL.md",
+      "bytes": 372,
+      "sha256": "6e71a9170156201d64b01032c87585275dfa957b3ca2edcc31340ea0a87cd023"
+    },
+    {
+      "path": "docs/ROADMAP-STATUS.md",
+      "bytes": 534,
+      "sha256": "975912e6845f37acade5d4c72657e5ff60044c240c55908505370925413ac76f"
+    },
+    {
+      "path": "docs/SECURITY.md",
+      "bytes": 482,
+      "sha256": "29ec7cc520181a6f3d644fbbadf999f35cb70494cba9b328731d25b2b5f8bb44"
+    },
+    {
+      "path": "docs/STDLIB-REFERENCE.md",
+      "bytes": 619,
+      "sha256": "d8f489d5964896d4c54e275314c79aabc4a4d40df20508a78a35a3672ee1fc60"
+    },
+    {
+      "path": "docs/STYLE-GUIDE.md",
+      "bytes": 319,
+      "sha256": "6b0a05e5d3dd2b31e8968c3c2c328d95fb6e17a78b5d128c9e2b567d93633189"
+    },
+    {
+      "path": "docs/TUTORIAL.md",
+      "bytes": 983,
+      "sha256": "d9e0dcf463fd2c3e7977860fc953cb984b3704f698d3789f8915ca899b1bbf19"
+    },
+    {
+      "path": "game/AETHER-GAME.ae",
+      "bytes": 688,
+      "sha256": "e48378d5a94bfd971e4d4b8d3261bb9f1f97e2d6ed5fe75954a3d6fa8be31474"
+    },
+    {
+      "path": "game/AETHER-GRAPHICS-PIPELINE.ae",
+      "bytes": 446,
+      "sha256": "c90433beb53f1cada91e688698e1689ffebf1b393649e3eec2b18a5ca686f2f2"
+    },
+    {
+      "path": "os/AETHER-KERNEL-CONTRACT.ae",
+      "bytes": 586,
+      "sha256": "ef67de6c01fef77c9a526c5343141b5ffd57fc0661888ed17a4bc5d058b2074c"
+    },
+    {
+      "path": "os/AETHER-OS.ae",
+      "bytes": 754,
+      "sha256": "a02919b6da62a0caf291246cb0a7633a20fcbb7bdcbe31d56b3a22b719cde726"
+    },
+    {
+      "path": "runtime/AETHER-CONCURRENCY.ae",
+      "bytes": 1010,
+      "sha256": "a0a66ae8a1db0ae05c2e8f69ec04958729fd37be0efce73b6ab85437ca953dc2"
+    },
+    {
+      "path": "runtime/AETHER-FUSION-RUNTIME-v17.html",
+      "bytes": 790601,
+      "sha256": "4ed200ba3aace0026ed09d7f8a6cbb9f36158453aa0c7819c45112b9e4eadf70"
+    },
+    {
+      "path": "runtime/AETHER-UNIVERSAL-FINAL-RUNTIME.html",
+      "bytes": 868925,
+      "sha256": "0e26a05772044fe7fe1d0b9a6fa114cde21cb17f761e6c87ea45305c3f7cbaef"
+    },
+    {
+      "path": "std/AETHER-DATA.ae",
+      "bytes": 397,
+      "sha256": "71527dad11a8801f1fa0aea2526401fa4e3b5ab03313d21731a60cf8a40562f9"
+    },
+    {
+      "path": "std/AETHER-IO.ae",
+      "bytes": 350,
+      "sha256": "04f3a50f6a4cf2ff20988d593f313abe1fa162668a1585c16b5dee98a10837a6"
+    },
+    {
+      "path": "std/AETHER-NET.ae",
+      "bytes": 299,
+      "sha256": "98d234036037ad997673532ce675774bb3e14ea96bfb9b638bf5da1a207dc41e"
+    },
+    {
+      "path": "std/AETHER-STDLIB-CORE.ae",
+      "bytes": 319,
+      "sha256": "7cf4b1e4de176d95dded2456e34e757928267c841e7f2856c1aa6e8a78228450"
+    },
+    {
+      "path": "std/AETHER-UI.ae",
+      "bytes": 351,
+      "sha256": "2b563ae7461d789532f89a60b745c0691cf567e4f60c2c08458f25e1d47f29eb"
+    },
+    {
+      "path": "targets/AETHER-TARGETS.ae",
+      "bytes": 789,
+      "sha256": "f4206715551a6782b4cc7da39afa3240f12e06f380f29514cf6adb2216cd6b68"
+    },
+    {
+      "path": "tests/AETHER-CONFORMANCE.ae",
+      "bytes": 914,
+      "sha256": "fb1f77d0868f88a5dc578f4cff56113cb80f8c41e5403950d8867de2dd30fa09"
+    },
+    {
+      "path": "tests/AETHER-FINAL-COVERAGE.ae",
+      "bytes": 1054,
+      "sha256": "0348d7eb063e426187ac211bc34f16313bda0e468a645bac7c3a77411bfcce06"
+    },
+    {
+      "path": "tooling/AETHER-CLI.ae",
+      "bytes": 1136,
+      "sha256": "10b52207a36c33afc7d51f462b5571edda5b87b36be93dd82930fbbc51332261"
+    },
+    {
+      "path": "tooling/AETHER-DEBUG.ae",
+      "bytes": 532,
+      "sha256": "57db68d7c61d12fe33ade7fdba53e4e012678807279a1f108c11f0c9a1a0ca6f"
+    },
+    {
+      "path": "tooling/AETHER-FMT.ae",
+      "bytes": 488,
+      "sha256": "557821c056196992b11b1c77ed4e3d44fbb31de1d1d86dbf91f033944b07694b"
+    },
+    {
+      "path": "tooling/AETHER-LSP.ae",
+      "bytes": 583,
+      "sha256": "b4312f683d1ee489008f21345fc875a355f839ba095d85336df05bfd9f54fd85"
+    },
+    {
+      "path": "tooling/AETHER-PKG.ae",
+      "bytes": 701,
+      "sha256": "69ecabce4e79225d4acc8cf643e663e89080726a52b6112494fb355a3afd1752"
+    },
+    {
+      "path": "web/AETHER-WEB.ae",
+      "bytes": 479,
+      "sha256": "28d24e88e4f04782650ec570242932b1def7d19e7b9b51791b42a180b77492dd"
+    }
+  ]
+}

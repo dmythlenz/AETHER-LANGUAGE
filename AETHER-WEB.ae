@@ -1,9 +1,13 @@
-# Full-stack HTTP abstraction: routes + request/response + app manifest.
-fn webApp(name)
-  return app(name,"server")
-fn webRoute(method,path)
-  return route(method,path)
-fn webGet(path)
-  return httpRequest("GET",path,{})
-fn webPost(path,body)
-  return httpRequest("POST",path,body)
+# Full-stack web model: routes, requests, persistence contract.
+fn WEB_app(name,entry)
+  return U_app(name,"server",entry)
+fn WEB_route(method,path)
+  return {"method":method,"path":path,"id":U_id("route",method+path)}
+fn WEB_get(path)
+  return U_request("web.GET",{"path":path},"network")
+fn WEB_post(path,body)
+  return U_request("web.POST",{"path":path,"body":body},"network")
+fn WEB_database()
+  return U_store()
+fn WEB_transaction(db,key,value)
+  return U_put(db,key,value)

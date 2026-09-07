@@ -1,0 +1,15 @@
+# Persistent cognition primitives: working/episodic/semantic memory contracts
+fn MEM_space()
+  return {"working":U_store(),"episodic":U_store(),"semantic":U_store()}
+fn MEM_write(m,kind,key,value)
+  let s=get(m,kind)
+  if s==0 return U_err("MEM_KIND",kind)
+  U_put(s,key,value)
+  return U_ok(m)
+fn MEM_read(m,kind,key)
+  let s=get(m,kind)
+  if s==0 return U_err("MEM_KIND",kind)
+  return U_ok(U_get(s,key))
+fn MEM_trace(m,kind)
+  let s=get(m,kind)
+  return U_snapshot(s,kind)

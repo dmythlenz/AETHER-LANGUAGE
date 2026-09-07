@@ -1,0 +1,41 @@
+# AETHER UNIVERSAL v5 — deterministic optimizer contracts
+fn OPT_const(v)
+  return {"op":"const","value":v,"folded":true}
+fn OPT_fold(op,a,b)
+  if op=="+" return OPT_const(a+b)
+  if op=="-" return OPT_const(a-b)
+  if op=="*" return OPT_const(a*b)
+  if op=="/" && b!=0 return OPT_const(a/b)
+  return {"op":op,"a":a,"b":b,"folded":false}
+fn OPT_dce(nodes,roots)
+  mut live={}
+  mut q=[]
+  let i=0
+  while i<len(roots)
+    put(live,get(roots,i),true)
+    push(q,get(roots,i))
+    i+=1
+  let qi=0
+  while qi<len(q)
+    let id=get(q,qi)
+    let n=get(nodes,id)
+    if n!=0
+      let ds=get(n,"deps")
+      let j=0
+      while j<len(ds)
+        if get(live,get(ds,j))!=true
+          put(live,get(ds,j),true)
+          push(q,get(ds,j))
+        j+=1
+    qi+=1
+  mut out=[]
+  let k=0
+  while k<len(nodes)
+    let n=get(nodes,k)
+    if get(live,get(n,"id"))==true push(out,n)
+    k+=1
+  return out
+fn OPT_inlineEligible(fnInfo)
+  return get(fnInfo,"args")<=6 && get(fnInfo,"effects")==0
+fn OPT_plan(flags)
+  return {"constantFold":true,"deadCode":true,"inline":true,"specialize":true,"flags":flags}

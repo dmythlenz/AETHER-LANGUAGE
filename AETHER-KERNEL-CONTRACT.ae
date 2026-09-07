@@ -1,0 +1,13 @@
+# Kernel-facing contract: scheduler, memory, process, IPC, capability checks
+fn KERNEL_new()
+  return {"abi":"AETHER-KERNEL/1","processes":[],"memory":{},"devices":[],"caps":U_caps()}
+fn KERNEL_alloc(k,name,size)
+  put(get(k,"memory"),name,{"size":size,"used":0})
+  return U_ok(k)
+fn KERNEL_device(k,name,kind)
+  push(get(k,"devices"),{"name":name,"kind":kind,"status":"adapter"})
+  return k
+fn KERNEL_syscall(k,name,args,cap)
+  if !U_hasCap(get(k,"caps"),cap,"*") && !U_hasCap(get(k,"caps"),cap,"adapter")
+    return U_err("CAP","denied "+cap)
+  return U_request("sys."+name,args,cap)

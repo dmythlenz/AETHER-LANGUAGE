@@ -1,0 +1,18 @@
+# AETHER UNIVERSAL v5 — package manager contract
+fn PKG_version(major,minor,patch)
+  return str(major)+"."+str(minor)+"."+str(patch)
+fn PKG_spec(name,version,deps,entry)
+  return {"name":name,"version":version,"dependencies":deps,"entry":entry,"format":"AEP/1"}
+fn PKG_lock(packages)
+  return {"format":"AEP-LOCK/1","packages":packages,"deterministic":true}
+fn PKG_resolve(spec,available)
+  let name=get(spec,"name")
+  let v=get(spec,"version")
+  let i=0
+  while i<len(available)
+    let p=get(available,i)
+    if get(p,"name")==name && get(p,"version")==v return p
+    i+=1
+  return U_err("PKG_NOT_FOUND",name+"@"+v)
+fn PKG_registry(url)
+  return {"url":url,"protocol":"AEP-REG/1","verified":true}

@@ -1,0 +1,13 @@
+# Executable specification index for AETHER UNIVERSAL v4.
+fn SPEC_index()
+  mut r=[]
+  push(r,"AETHER source is canonical application logic")
+  push(r,"Existing AETHER parser/runtime remains authoritative")
+  push(r,"Universal execution is staged through AETHER-IR")
+  push(r,"Capabilities are explicit at host/device boundaries")
+  push(r,"Deterministic graphs and snapshots define reproducible state transitions")
+  push(r,"OS, game, web, AI, mobile and desktop domains share one data model")
+  push(r,"Physical device drivers and platform SDKs remain adapter boundaries")
+  push(r,"No domain is marked native unless the current runtime/backend can execute it")
+  return r
+print str(SPEC_index())

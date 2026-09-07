@@ -1,0 +1,14 @@
+# Canonical project manifest expressed in AETHER itself.
+fn PROJECT_manifest()
+  return {
+    "name":"aether-universal-platform",
+    "version":"5.0.0",
+    "language":"AETHER",
+    "abi":"AETHER-UNIVERSAL/5",
+    "entry":"AETHER-UNIVERSAL-ALL.ae",
+    "modules":["core","compiler","runtime","tooling","std","os","game","ai","web","tests"],
+    "targets":["wasm","native-adapter","android-adapter","desktop-adapter","embedded-adapter"],
+    "deterministic":true,
+    "no_foreign_language_for_domain_logic":true
+  }
+print str(PROJECT_manifest())

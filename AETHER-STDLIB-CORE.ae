@@ -1,0 +1,12 @@
+# Modular standard library surface — pure AETHER helpers
+fn STD_assert(ok,msg)
+  if ok return U_ok(true)
+  return U_err("ASSERT",msg)
+fn STD_clamp(x,lo,hi)
+  return max(lo,min(hi,x))
+fn STD_contains(xs,v)
+  return indexOf(xs,v)>=0
+fn STD_rangeSum(n)
+  return sum(range(0,n))
+fn STD_mapSafe(xs,fn)
+  return map(xs,fn)

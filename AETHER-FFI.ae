@@ -1,0 +1,11 @@
+# AETHER UNIVERSAL v5 — stable FFI/ABI contracts
+fn FFI_type(name,size,align)
+  return {"name":name,"size":size,"align":align}
+fn FFI_symbol(name,library,signature,cap)
+  return {"name":name,"library":library,"signature":signature,"capability":cap}
+fn FFI_extern(name,signature,library,cap)
+  return {"extern":name,"signature":signature,"library":library,"capability":cap,"abi":"AETHER-FFI/1"}
+fn FFI_embed(entry,mode)
+  return {"entry":entry,"mode":mode,"abi":"AETHER-EMBED/1"}
+fn FFI_manifest(symbols)
+  return {"abi":"AETHER-FFI/1","symbols":symbols,"ownership":"caller-defined","errors":"Result-compatible"}

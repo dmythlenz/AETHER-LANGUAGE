@@ -1,0 +1,16 @@
+# Deterministic debugger/profiler contracts
+fn DBG_break(id,file,line)
+  return {"id":id,"file":file,"line":line,"enabled":true}
+fn DBG_session(entry)
+  return {"entry":entry,"state":"paused","frames":[],"locals":{},"events":[]}
+fn DBG_event(s,kind,data)
+  push(get(s,"events"),{"seq":len(get(s,"events"))+1,"kind":kind,"data":data})
+  return s
+fn DBG_profile(events)
+  mut counts={}
+  let i=0
+  while i<len(events)
+    let k=get(get(events,i),"kind")
+    put(counts,k,(get(counts,k)==0?0:get(counts,k))+1)
+    i+=1
+  return counts

@@ -1,0 +1,593 @@
+# AETHER UNIVERSAL PLATFORM v5.0.0
+# Canonical AETHER-only substrate. Host/device calls remain explicit adapters.
+let AETHER_VERSION = "5.0.0"
+let AETHER_ABI = "AETHER-UNIVERSAL/5"
+
+fn U_ok(v)
+  return {"ok":true,"value":v,"code":"","message":""}
+fn U_err(code,message)
+  return {"ok":false,"value":0,"code":code,"message":message}
+fn U_isOk(r)
+  return get(r,"ok") == true
+fn U_unwrap(r)
+  if U_isOk(r)
+    return get(r,"value")
+  return 0
+
+fn U_kind(v)
+  let t=type(v)
+  if t=="number" return "Number"
+  if t=="string" return "String"
+  if t=="boolean" return "Bool"
+  if t=="list" return "List"
+  if t=="dict" return "Dict"
+  if t=="array" return "List"
+  if t=="object" return "Dict"
+  return str(t)
+fn U_require(v,wanted)
+  if wanted=="Any" || U_kind(v)==wanted return U_ok(v)
+  return U_err("TYPE","expected "+wanted+" got "+U_kind(v))
+
+fn U_id(tag,s)
+  return tag+":"+str(len(s))+":"+substr(s,0,min(len(s),32))
+
+fn U_cap(name,scope)
+  let c=put({},"name",name)
+  c=put(c,"scope",scope)
+  return put(c,"id",U_id("cap",name+":"+scope))
+fn U_caps()
+  return [U_cap("compute","*"),U_cap("storage","*"),U_cap("network","adapter"),U_cap("gpu","adapter"),U_cap("device","adapter")]
+fn U_hasCap(caps,name,scope)
+  let i=0
+  while i<len(caps)
+    let c=get(caps,i)
+    if get(c,"name")==name && (get(c,"scope")==scope || get(c,"scope")=="*") return true
+    i+=1
+  return false
+
+fn U_eventBus()
+  return {"clock":0,"events":[]}
+fn U_emit(bus,topic,payload)
+  let n=get(bus,"clock")+1
+  let e={"id":U_id("evt",topic+":"+str(n)),"seq":n,"topic":topic,"payload":payload}
+  push(get(bus,"events"),e)
+  return put(bus,"clock",n)
+fn U_events(bus)
+  return get(bus,"events")
+
+fn U_store()
+  return {"rev":0,"data":{}}
+fn U_put(store,key,value)
+  put(get(store,"data"),key,value)
+  return put(store,"rev",get(store,"rev")+1)
+fn U_get(store,key)
+  return get(get(store,"data"),key)
+fn U_snapshot(store,name)
+  return {"id":U_id("snap",name+":"+str(get(store,"rev"))+":"+str(get(store,"data"))),"rev":get(store,"rev"),"data":get(store,"data")}
+
+fn U_process(pid,name,state,caps)
+  return {"pid":pid,"name":name,"state":state,"cpu":0,"memory":0,"caps":caps}
+fn U_processStart(p)
+  return put(p,"state","running")
+fn U_processStop(p)
+  return put(p,"state","stopped")
+fn U_resource(name,capacity)
+  return {"name":name,"capacity":capacity,"used":0,"version":0}
+fn U_reserve(r,amount)
+  if get(r,"used")+amount>get(r,"capacity") return U_err("RESOURCE",get(r,"name")+" exhausted")
+  r=put(r,"used",get(r,"used")+amount)
+  r=put(r,"version",get(r,"version")+1)
+  return U_ok(r)
+
+fn U_graph()
+  return {"nodes":[],"tick":0,"done":0,"errors":0}
+fn U_node(id,op,args,deps,priority)
+  return {"id":id,"op":op,"args":args,"deps":deps,"priority":priority,"status":"pending","value":0,"error":""}
+fn U_findNode(nodes,id)
+  let i=0
+  while i<len(nodes)
+    if get(get(nodes,i),"id")==id return i
+    i+=1
+  return -1
+fn U_addNode(g,n)
+  let ns=get(g,"nodes")
+  if U_findNode(ns,get(n,"id"))<0 push(ns,n)
+  return put(g,"nodes",ns)
+fn U_ready(n,ns)
+  if get(n,"status")!="pending" return false
+  let ds=get(n,"deps")
+  let i=0
+  while i<len(ds)
+    let j=U_findNode(ns,get(ds,i))
+    if j<0 || get(get(ns,j),"status")!="done" return false
+    i+=1
+  return true
+fn U_choose(g)
+  let ns=get(g,"nodes")
+  let best=-1
+  let i=0
+  while i<len(ns)
+    let n=get(ns,i)
+    if U_ready(n,ns)
+      if best<0 || get(n,"priority")>get(get(ns,best),"priority") || (get(n,"priority")==get(get(ns,best),"priority") && str(get(n,"id"))<str(get(get(ns,best),"id")))
+        best=i
+    i+=1
+  if best<0 return 0
+  return get(ns,best)
+fn U_depValues(n,ns)
+  mut out=[]
+  let ds=get(n,"deps")
+  let i=0
+  while i<len(ds)
+    push(out,get(get(ns,U_findNode(ns,get(ds,i))),"value"))
+    i+=1
+  return out
+fn U_exec(op,args,vals)
+  if op=="const" return U_ok(get(args,0))
+  if op=="add" return U_ok(get(vals,0)+get(vals,1))
+  if op=="sub" return U_ok(get(vals,0)-get(vals,1))
+  if op=="mul" return U_ok(get(vals,0)*get(vals,1))
+  if op=="div"
+    if get(vals,1)==0 return U_err("DIV0","division by zero")
+    return U_ok(get(vals,0)/get(vals,1))
+  if op=="sum"
+    mut total=0
+    let xs=get(vals,0)
+    let i=0
+    while i<len(xs)
+      total+=get(xs,i)
+      i+=1
+    return U_ok(total)
+  return U_err("OP","unknown "+str(op))
+fn U_stepGraph(g)
+  let n=U_choose(g)
+  if n==0 return [g,false]
+  let ns=get(g,"nodes")
+  let idx=U_findNode(ns,get(n,"id"))
+  n=put(n,"status","running")
+  ns=put(ns,idx,n)
+  let r=U_exec(get(n,"op"),get(n,"args"),U_depValues(n,ns))
+  if U_isOk(r)
+    n=put(n,"status","done")
+    n=put(n,"value",U_unwrap(r))
+  else
+    n=put(n,"status","error")
+    n=put(n,"error",get(r,"message"))
+    g=put(g,"errors",get(g,"errors")+1)
+  ns=put(ns,idx,n)
+  g=put(g,"nodes",ns)
+  g=put(g,"tick",get(g,"tick")+1)
+  if U_isOk(r) g=put(g,"done",get(g,"done")+1)
+  return [g,true]
+fn U_runGraph(g,budget)
+  mut s=g
+  let i=0
+  while i<budget
+    let r=U_stepGraph(s)
+    s=get(r,0)
+    if get(r,1)==false return s
+    i+=1
+  return s
+
+fn U_tensor(shape,data)
+  return {"shape":shape,"rank":len(shape),"data":data}
+fn U_dot(a,b)
+  if len(a)!=len(b) return U_err("SHAPE","dot length mismatch")
+  mut s=0
+  let i=0
+  while i<len(a)
+    s+=get(a,i)*get(b,i)
+    i+=1
+  return U_ok(s)
+fn U_matmul(a,b)
+  let sa=get(a,"shape")
+  let sb=get(b,"shape")
+  if len(sa)!=2 || len(sb)!=2 return U_err("SHAPE","rank-2 required")
+  if get(sa,1)!=get(sb,0) return U_err("SHAPE","inner dimensions differ")
+  let ar=get(sa,0)
+  let ac=get(sa,1)
+  let bc=get(sb,1)
+  mut out=[]
+  let r=0
+  while r<ar
+    let c0=0
+    mut c=c0
+    while c<bc
+      mut z=0
+      let k0=0
+      mut k=k0
+      while k<ac
+        z+=get(get(a,"data"),r*ac+k)*get(get(b,"data"),k*bc+c)
+        k+=1
+      push(out,z)
+      c+=1
+    r+=1
+  return U_ok(U_tensor([ar,bc],out))
+fn U_softmax(v)
+  if len(v)==0 return U_err("EMPTY","softmax input")
+  mut m=get(v,0)
+  let i=1
+  mut j=i
+  while j<len(v)
+    if get(v,j)>m m=get(v,j)
+    j+=1
+  mut ex=[]
+  mut total=0
+  let k=0
+  mut p=k
+  while p<len(v)
+    let e=exp(get(v,p)-m)
+    push(ex,e)
+    total+=e
+    p+=1
+  mut out=[]
+  let q=0
+  mut z=q
+  while z<len(ex)
+    push(out,get(ex,z)/total)
+    z+=1
+  return U_ok(out)
+fn U_attention(q,keys,values)
+  let ks=get(keys,"shape")
+  let vs=get(values,"shape")
+  if len(ks)!=2 || len(vs)!=2 return U_err("SHAPE","attention rank")
+  if len(q)!=get(ks,1) return U_err("SHAPE","query/key mismatch")
+  if get(ks,0)!=get(vs,0) return U_err("SHAPE","key/value rows differ")
+  let rows=get(ks,0)
+  let width=get(ks,1)
+  let outWidth=get(vs,1)
+  mut scores=[]
+  let i=0
+  mut r=i
+  while r<rows
+    mut s=0
+    let j=0
+    mut c=j
+    while c<width
+      s+=get(q,c)*get(get(keys,"data"),r*width+c)
+      c+=1
+    push(scores,s/sqrt(width))
+    r+=1
+  let probs=U_softmax(scores)
+  if !U_isOk(probs) return probs
+  mut out=[]
+  let col0=0
+  mut col=col0
+  while col<outWidth
+    mut total=0
+    let row0=0
+    mut row=row0
+    while row<rows
+      total+=get(U_unwrap(probs),row)*get(get(values,"data"),row*outWidth+col)
+      row+=1
+    push(out,total)
+    col+=1
+  return U_ok(U_tensor([1,outWidth],out))
+
+fn U_route(intent)
+  if startsWith(intent,"chat:") return "llm.generate"
+  if startsWith(intent,"embed:") return "llm.embed"
+  if startsWith(intent,"retrieve:") return "rag.retrieve"
+  if startsWith(intent,"code:") return "llm.code"
+  if startsWith(intent,"game:") return "game.simulate"
+  if startsWith(intent,"os:") return "os.control"
+  if startsWith(intent,"web:") return "web.request"
+  return "universal.dispatch"
+fn U_request(route,payload,capability)
+  return {"route":route,"payload":payload,"capability":capability,"requiresAdapter":true,"status":"adapter-required"}
+
+fn U_world()
+  return {"time":0,"entities":[],"systems":[],"events":U_eventBus()}
+fn U_entity(id)
+  return {"id":id}
+fn U_component(e,name,value)
+  put(e,name,value)
+  return e
+fn U_spawn(w,e)
+  push(get(w,"entities"),e)
+  return w
+fn U_stepWorld(w,dt)
+  w=put(w,"time",get(w,"time")+dt)
+  let i=0
+  while i<len(get(w,"entities"))
+    let e=get(get(w,"entities"),i)
+    if get(e,"position")!=0 && get(e,"velocity")!=0
+      let p=get(e,"position")
+      let v=get(e,"velocity")
+      e=put(e,"position",{"x":get(p,"x")+get(v,"x")*dt,"y":get(p,"y")+get(v,"y")*dt,"z":get(p,"z")+get(v,"z")*dt})
+      put(get(w,"entities"),i,e)
+    i+=1
+  return w
+
+fn U_app(name,target,entry)
+  return {"name":name,"target":target,"entry":entry,"version":"1.0.0","permissions":[],"screens":[]}
+fn U_permission(a,p)
+  push(get(a,"permissions"),p)
+  return a
+fn U_manifest(a,version,features)
+  let m=put({},"name",get(a,"name"))
+  m=put(m,"target",get(a,"target"))
+  m=put(m,"entry",get(a,"entry"))
+  m=put(m,"version",version)
+  return put(m,"features",features)
+fn U_buildPlan(m)
+  return [["parse",get(m,"entry")],["semantic","AETHER"],["lower","AETHER-IR"],["optimize","deterministic"],["backend",get(m,"target")],["package",get(m,"name")]]
+fn U_target(target)
+  if target=="wasm" return {"target":target,"status":"native-backend","adapter":false}
+  return {"target":target,"status":"adapter-required","adapter":true}
+
+fn U_selfTest()
+  mut out=[]
+  let g0=U_graph()
+  let g1=U_addNode(U_addNode(g0,U_node("a","const",[2],[],10)),U_node("b","const",[3],[],10))
+  let g2=U_addNode(g1,U_node("c","add",[],["a","b"],20))
+  let gr=U_runGraph(g2,8)
+  let ns=get(gr,"nodes")
+  let cv=get(get(ns,U_findNode(ns,"c")),"value")
+  push(out,cv==5)
+  let mm=U_matmul(U_tensor([1,2],[2,3]),U_tensor([2,1],[4,5]))
+  push(out,U_isOk(mm))
+  push(out,get(get(U_unwrap(mm),"data"),0)==23)
+  let at=U_attention([1,0],U_tensor([2,2],[1,0,0,1]),U_tensor([2,1],[10,20]))
+  push(out,U_isOk(at))
+  push(out,get(get(U_unwrap(at),"shape"),1)==1)
+  let c=U_caps()
+  push(out,U_hasCap(c,"compute","x"))
+  push(out,get(U_target("wasm"),"status")=="native-backend")
+  mut pass=0
+  let i=0
+  while i<len(out)
+    if get(out,i) pass+=1
+    i+=1
+  return {"passed":pass,"total":len(out),"ok":pass==len(out)}
+
+print "AETHER UNIVERSAL PLATFORM "+AETHER_VERSION
+print str(U_selfTest())
+# Canonical compiler contract. The existing AETHER runtime owns parsing/execution;
+# this layer defines deterministic analysis/lowering/build metadata in AETHER.
+fn C_token(kind,value,line,col)
+  return {"kind":kind,"value":value,"line":line,"col":col}
+fn C_isAlpha(c)
+  return indexOf("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$",c)>=0
+fn C_isDigit(c)
+  return indexOf("0123456789",c)>=0
+fn C_lex(src)
+  mut out=[]
+  mut i=0
+  mut line=1
+  mut col=1
+  while i<len(src)
+    let c=substr(src,i,1)
+    if c==" " || c=="\t" || c=="\r"
+      i+=1
+      col+=1
+    else if c=="\n"
+      i+=1
+      line+=1
+      col=1
+    else if c=="#"
+      while i<len(src) && substr(src,i,1)!="\n"
+        i+=1
+        col+=1
+    else if c=="\"" || c=="'"
+      let q=c
+      let sl=line
+      let sc=col
+      mut s=""
+      i+=1
+      col+=1
+      while i<len(src) && substr(src,i,1)!=q
+        s+=substr(src,i,1)
+        i+=1
+        col+=1
+      if i<len(src)
+        i+=1
+        col+=1
+      push(out,C_token("string",s,sl,sc))
+    else if C_isDigit(c)
+      let sl=line
+      let sc=col
+      let start=i
+      while i<len(src) && (C_isDigit(substr(src,i,1)) || substr(src,i,1)==".")
+        i+=1
+        col+=1
+      push(out,C_token("number",substr(src,start,i-start),sl,sc))
+    else if C_isAlpha(c)
+      let sl=line
+      let sc=col
+      let start=i
+      while i<len(src) && (C_isAlpha(substr(src,i,1)) || C_isDigit(substr(src,i,1)))
+        i+=1
+        col+=1
+      push(out,C_token("identifier",substr(src,start,i-start),sl,sc))
+    else
+      push(out,C_token("symbol",c,line,col))
+      i+=1
+      col+=1
+  return out
+fn C_balance(src)
+  mut round=0
+  mut square=0
+  mut curly=0
+  let t=C_lex(src)
+  let i=0
+  while i<len(t)
+    let v=get(get(t,i),"value")
+    if v=="(" round+=1
+    if v==")" round-=1
+    if v=="[" square+=1
+    if v=="]" square-=1
+    if v=="{" curly+=1
+    if v=="}" curly-=1
+    if round<0 || square<0 || curly<0 return false
+    i+=1
+  return round==0 && square==0 && curly==0
+fn C_ir(op,args,typ)
+  return {"op":op,"args":args,"type":typ}
+fn C_lowerLiteral(v)
+  return C_ir("const",[v],type(v))
+fn C_buildPlan(source,target)
+  let toks=C_lex(source)
+  let balanced=C_balance(source)
+  return {"target":target,"tokenCount":len(toks),"balanced":balanced,"stages":["lex","parse","semantic","AETHER-IR","optimize","backend"],"status":balanced?"ready":"syntax-error"}
+# OS personality: process/resource/IPC/scheduler contracts.
+fn OS_new()
+  return {"processes":[],"resources":[],"bus":U_eventBus()}
+fn OS_spawn(os,name)
+  let pid=len(get(os,"processes"))+1
+  let p=U_process(pid,name,"created",U_caps())
+  push(get(os,"processes"),p)
+  return os
+fn OS_startAll(os)
+  let i=0
+  while i<len(get(os,"processes"))
+    let p=get(get(os,"processes"),i)
+    put(get(os,"processes"),i,U_processStart(p))
+    i+=1
+  return os
+fn OS_res(os,name,capacity)
+  push(get(os,"resources"),U_resource(name,capacity))
+  return os
+fn OS_ipc(os,from,to,message)
+  return put(os,"bus",U_emit(get(os,"bus"),"ipc",{"from":from,"to":to,"message":message}))
+fn OS_request(os,operation,payload)
+  return U_request("os."+operation,payload,"device")
+# Deterministic ECS game substrate. Device renderer/audio/input remain adapters.
+fn GAME_new()
+  return U_world()
+fn GAME_spawn(w,id,x,y,z)
+  let e=U_entity(id)
+  e=U_component(e,"position",{"x":x,"y":y,"z":z})
+  e=U_component(e,"velocity",{"x":0,"y":0,"z":0})
+  return U_spawn(w,e)
+fn GAME_velocity(w,id,x,y,z)
+  let i=0
+  while i<len(get(w,"entities"))
+    let e=get(get(w,"entities"),i)
+    if get(e,"id")==id
+      put(e,"velocity",{"x":x,"y":y,"z":z})
+      put(get(w,"entities"),i,e)
+    i+=1
+  return w
+fn GAME_step(w,dt)
+  return U_stepWorld(w,dt)
+fn GAME_render(w)
+  return U_request("game.render",w,"gpu")
+fn GAME_audio(command)
+  return U_request("game.audio",command,"audio")
+# AI-native substrate: tensor math, memory, inference contracts and agent loop.
+fn AI_model(name,modelDim,layers,heads)
+  return {"name":name,"dim":modelDim,"layers":layers,"heads":heads}
+fn AI_embedding(values)
+  return U_tensor([1,len(values)],values)
+fn AI_infer(model,input)
+  return U_request("llm.infer",{"model":model,"input":input},"compute")
+fn AI_memory()
+  return U_store()
+fn AI_remember(mem,key,value)
+  return U_put(mem,key,value)
+fn AI_recall(mem,key)
+  return U_get(mem,key)
+fn AI_tool(name,capability)
+  return {"name":name,"capability":capability}
+fn AI_agent(name)
+  return {"name":name,"memory":AI_memory(),"tools":[AI_tool("search","network"),AI_tool("compute","compute"),AI_tool("memory","storage")],"goal":"idle"}
+fn AI_step(agent,input)
+  let route=U_route("chat:"+str(input))
+  return U_request(route,{"agent":agent,"input":input},"compute")
+# EGI/AGI orchestration substrate. This is a control architecture, not a claim of human-level AGI.
+fn EGI_new(name)
+  return {"name":name,"goal":"","working":{},"memory":AI_memory(),"history":[],"step":0}
+fn EGI_setGoal(e,goal)
+  return put(e,"goal",goal)
+fn EGI_observe(e,state)
+  e=put(e,"working",state)
+  push(get(e,"history"),{"kind":"observe","state":state,"step":get(e,"step")})
+  return e
+fn EGI_plan(e)
+  let plan=["observe","retrieve","reason","verify","act","observe"]
+  push(get(e,"history"),{"kind":"plan","plan":plan,"goal":get(e,"goal")})
+  return plan
+fn EGI_act(e,action)
+  let r=U_request("egi.action",{"goal":get(e,"goal"),"action":action},"compute")
+  push(get(e,"history"),{"kind":"action","request":r})
+  return r
+fn EGI_step(e,state)
+  e=put(e,"step",get(e,"step")+1)
+  e=EGI_observe(e,state)
+  let plan=EGI_plan(e)
+  return {"entity":e,"next":get(plan,0),"step":get(e,"step")}
+# Full-stack web model: routes, requests, persistence contract.
+fn WEB_app(name,entry)
+  return U_app(name,"server",entry)
+fn WEB_route(method,path)
+  return {"method":method,"path":path,"id":U_id("route",method+path)}
+fn WEB_get(path)
+  return U_request("web.GET",{"path":path},"network")
+fn WEB_post(path,body)
+  return U_request("web.POST",{"path":path,"body":body},"network")
+fn WEB_database()
+  return U_store()
+fn WEB_transaction(db,key,value)
+  return U_put(db,key,value)
+# Target contracts. Native means existing backend can execute without a new host adapter.
+fn TARGET_describe(name)
+  return U_target(name)
+fn TARGET_wasm(entry)
+  let a=U_app("aether-wasm","wasm",entry)
+  return U_buildPlan(U_manifest(a,"5.0.0",["AETHER-IR","deterministic","wasm"]))
+fn TARGET_android(entry)
+  let a=U_app("aether-android","android",entry)
+  a=U_permission(a,"INTERNET")
+  return U_buildPlan(U_manifest(a,"5.0.0",["AETHER-IR","android","apk/aab-adapter"]))
+fn TARGET_desktop(entry,target)
+  let a=U_app("aether-desktop",target,entry)
+  return U_buildPlan(U_manifest(a,"5.0.0",["AETHER-IR","desktop","native-adapter"]))
+fn TARGET_embedded(entry)
+  let a=U_app("aether-embedded","embedded",entry)
+  return U_buildPlan(U_manifest(a,"5.0.0",["AETHER-IR","firmware-adapter"]))
+# Final conformance: only claim what is source-native; adapters are explicit.
+fn TEST_row(domain,status)
+  return put(put({},"domain",domain),"status",status)
+fn TEST_conformance()
+  mut r=[]
+  push(r,TEST_row("language","native"))
+  push(r,TEST_row("dataflow","native"))
+  push(r,TEST_row("tensor","native"))
+  push(r,TEST_row("quantum","existing-runtime"))
+  push(r,TEST_row("HyperFS","existing-runtime"))
+  push(r,TEST_row("OS","adapter-required"))
+  push(r,TEST_row("game-render","adapter-required"))
+  push(r,TEST_row("LLM-weights","adapter-required"))
+  push(r,TEST_row("web-network","adapter-required"))
+  push(r,TEST_row("android-packaging","adapter-required"))
+  push(r,TEST_row("desktop-native","adapter-required"))
+  push(r,TEST_row("embedded","adapter-required"))
+  return r
+fn TEST_run()
+  let s=U_selfTest()
+  return {"core":s,"conformance":TEST_conformance(),"ok":get(s,"ok")}
+print str(TEST_run())
+# Executable specification index for AETHER UNIVERSAL v4.
+fn SPEC_index()
+  mut r=[]
+  push(r,"AETHER source is canonical application logic")
+  push(r,"Existing AETHER parser/runtime remains authoritative")
+  push(r,"Universal execution is staged through AETHER-IR")
+  push(r,"Capabilities are explicit at host/device boundaries")
+  push(r,"Deterministic graphs and snapshots define reproducible state transitions")
+  push(r,"OS, game, web, AI, mobile and desktop domains share one data model")
+  push(r,"Physical device drivers and platform SDKs remain adapter boundaries")
+  push(r,"No domain is marked native unless the current runtime/backend can execute it")
+  return r
+print str(SPEC_index())
+let MANIFEST={}
+MANIFEST=put(MANIFEST,"name","AETHER UNIVERSAL PLATFORM")
+MANIFEST=put(MANIFEST,"version","5.0.0")
+MANIFEST=put(MANIFEST,"language","AETHER")
+MANIFEST=put(MANIFEST,"abi","AETHER-UNIVERSAL/5")
+MANIFEST=put(MANIFEST,"targets",["wasm","native","android","windows","linux","embedded","virtual"])
+MANIFEST=put(MANIFEST,"domains",["language","compiler","ir","os","game","ai","llm","egi","web","desktop","mobile","data","network","quantum","hyperfs"])
+MANIFEST=put(MANIFEST,"sourcePolicy","AETHER-only domain logic; adapters only at execution boundary")
+MANIFEST=put(MANIFEST,"runtime","AETHER-FUSION-RUNTIME-v17 host")
+print str(MANIFEST)

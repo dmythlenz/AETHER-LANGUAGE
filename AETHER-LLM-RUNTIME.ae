@@ -1,0 +1,11 @@
+# LLM runtime contract beyond a toy generator
+fn LLM_tokenizer(name,vocab)
+  return {"name":name,"vocab":vocab,"format":"AETHER-TOK/1"}
+fn LLM_kvCache(layers,heads,context)
+  return {"layers":layers,"heads":heads,"context":context,"format":"AETHER-KV/1"}
+fn LLM_sampling(temp,topK,topP)
+  return {"temperature":temp,"topK":topK,"topP":topP}
+fn LLM_modelManifest(name,dim,layers,heads,weights)
+  return {"name":name,"dim":dim,"layers":layers,"heads":heads,"weights":weights,"format":"AETHER-MODEL/1"}
+fn LLM_inferPlan(model,input,opts)
+  return {"model":model,"input":input,"options":opts,"stages":["tokenize","embed","attention","ffn","kv-cache","sample"],"adapterRequired":true}

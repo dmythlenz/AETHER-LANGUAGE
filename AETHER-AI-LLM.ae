@@ -1,0 +1,20 @@
+# AI-native substrate: tensor math, memory, inference contracts and agent loop.
+fn AI_model(name,modelDim,layers,heads)
+  return {"name":name,"dim":modelDim,"layers":layers,"heads":heads}
+fn AI_embedding(values)
+  return U_tensor([1,len(values)],values)
+fn AI_infer(model,input)
+  return U_request("llm.infer",{"model":model,"input":input},"compute")
+fn AI_memory()
+  return U_store()
+fn AI_remember(mem,key,value)
+  return U_put(mem,key,value)
+fn AI_recall(mem,key)
+  return U_get(mem,key)
+fn AI_tool(name,capability)
+  return {"name":name,"capability":capability}
+fn AI_agent(name)
+  return {"name":name,"memory":AI_memory(),"tools":[AI_tool("search","network"),AI_tool("compute","compute"),AI_tool("memory","storage")],"goal":"idle"}
+fn AI_step(agent,input)
+  let route=U_route("chat:"+str(input))
+  return U_request(route,{"agent":agent,"input":input},"compute")

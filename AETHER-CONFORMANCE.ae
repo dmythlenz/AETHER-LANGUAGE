@@ -1,17 +1,22 @@
-# Honest conformance matrix. 'native' means implemented in AETHER source.
-# 'adapter-required' means the language contract exists but a host backend must execute it.
-# 'planned' means architecture is specified but runtime support is not complete.
-fn conformance()
-  let rows=[]
-  push(rows,{"domain":"language","status":"native","note":"existing AETHER parser/runtime + extended IR records"})
-  push(rows,{"domain":"dataflow","status":"native","note":"deterministic DAG scheduler"})
-  push(rows,{"domain":"OS","status":"adapter-required","note":"process/resource/IPC model"})
-  push(rows,{"domain":"game","status":"adapter-required","note":"ECS + deterministic fixed-step simulation; graphics/audio/input adapters required"})
-  push(rows,{"domain":"LLM","status":"adapter-required","note":"real tensor/softmax/attention request layer; model weights/backend required"})
-  push(rows,{"domain":"web","status":"adapter-required","note":"HTTP route/request model; execution returns an explicit adapter-required request"})
-  push(rows,{"domain":"android","status":"adapter-required","note":"Aether manifest/build graph; Android SDK/toolchain required"})
-  push(rows,{"domain":"desktop","status":"adapter-required","note":"application/build graph; native window/graphics backend required"})
-  push(rows,{"domain":"embedded","status":"adapter-required","note":"IR/resource contract; device backend required"})
-  push(rows,{"domain":"quantum","status":"existing","note":"original AETHER/KAE quantum primitives"})
-  return rows
-print str(conformance())
+# Final conformance: only claim what is source-native; adapters are explicit.
+fn TEST_row(domain,status)
+  return put(put({},"domain",domain),"status",status)
+fn TEST_conformance()
+  mut r=[]
+  push(r,TEST_row("language","native"))
+  push(r,TEST_row("dataflow","native"))
+  push(r,TEST_row("tensor","native"))
+  push(r,TEST_row("quantum","existing-runtime"))
+  push(r,TEST_row("HyperFS","existing-runtime"))
+  push(r,TEST_row("OS","adapter-required"))
+  push(r,TEST_row("game-render","adapter-required"))
+  push(r,TEST_row("LLM-weights","adapter-required"))
+  push(r,TEST_row("web-network","adapter-required"))
+  push(r,TEST_row("android-packaging","adapter-required"))
+  push(r,TEST_row("desktop-native","adapter-required"))
+  push(r,TEST_row("embedded","adapter-required"))
+  return r
+fn TEST_run()
+  let s=U_selfTest()
+  return {"core":s,"conformance":TEST_conformance(),"ok":get(s,"ok")}
+print str(TEST_run())

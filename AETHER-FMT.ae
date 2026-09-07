@@ -1,0 +1,14 @@
+# Deterministic formatter contract. The parser remains authoritative for syntax.
+fn FMT_normalizeSpace(s)
+  return trim(replace(s,"  "," "))
+fn FMT_format(source)
+  let lines=split(source,"\n")
+  mut out=[]
+  let i=0
+  while i<len(lines)
+    let line=FMT_normalizeSpace(get(lines,i))
+    push(out,line)
+    i+=1
+  return join(out,"\n")
+fn FMT_style()
+  return {"indent":2,"quotes":"double","trailingCommas":false,"blankLines":"semantic","names":"snake_case functions + PascalCase types"}

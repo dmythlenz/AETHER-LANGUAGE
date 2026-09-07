@@ -1,0 +1,87 @@
+# Canonical compiler contract. The existing AETHER runtime owns parsing/execution;
+# this layer defines deterministic analysis/lowering/build metadata in AETHER.
+fn C_token(kind,value,line,col)
+  return {"kind":kind,"value":value,"line":line,"col":col}
+fn C_isAlpha(c)
+  return indexOf("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$",c)>=0
+fn C_isDigit(c)
+  return indexOf("0123456789",c)>=0
+fn C_lex(src)
+  mut out=[]
+  mut i=0
+  mut line=1
+  mut col=1
+  while i<len(src)
+    let c=substr(src,i,1)
+    if c==" " || c=="\t" || c=="\r"
+      i+=1
+      col+=1
+    else if c=="\n"
+      i+=1
+      line+=1
+      col=1
+    else if c=="#"
+      while i<len(src) && substr(src,i,1)!="\n"
+        i+=1
+        col+=1
+    else if c=="\"" || c=="'"
+      let q=c
+      let sl=line
+      let sc=col
+      mut s=""
+      i+=1
+      col+=1
+      while i<len(src) && substr(src,i,1)!=q
+        s+=substr(src,i,1)
+        i+=1
+        col+=1
+      if i<len(src)
+        i+=1
+        col+=1
+      push(out,C_token("string",s,sl,sc))
+    else if C_isDigit(c)
+      let sl=line
+      let sc=col
+      let start=i
+      while i<len(src) && (C_isDigit(substr(src,i,1)) || substr(src,i,1)==".")
+        i+=1
+        col+=1
+      push(out,C_token("number",substr(src,start,i-start),sl,sc))
+    else if C_isAlpha(c)
+      let sl=line
+      let sc=col
+      let start=i
+      while i<len(src) && (C_isAlpha(substr(src,i,1)) || C_isDigit(substr(src,i,1)))
+        i+=1
+        col+=1
+      push(out,C_token("identifier",substr(src,start,i-start),sl,sc))
+    else
+      push(out,C_token("symbol",c,line,col))
+      i+=1
+      col+=1
+  return out
+fn C_balance(src)
+  mut round=0
+  mut square=0
+  mut curly=0
+  let t=C_lex(src)
+  let i=0
+  while i<len(t)
+    let v=get(get(t,i),"value")
+    if v=="(" round+=1
+    if v==")" round-=1
+    if v=="[" square+=1
+    if v=="]" square-=1
+    if v=="{" curly+=1
+    if v=="}" curly-=1
+    if round<0 || square<0 || curly<0 return false
+    i+=1
+  return round==0 && square==0 && curly==0
+fn C_ir(op,args,typ)
+  return {"op":op,"args":args,"type":typ}
+fn C_lowerLiteral(v)
+  return C_ir("const",[v],type(v))
+fn C_buildPlan(source,target)
+  let toks=C_lex(source)
+  let balanced=C_balance(source)
+  return {"target":target,"tokenCount":len(toks),"balanced":balanced,"stages":["lex","parse","semantic","AETHER-IR","optimize","backend"],"status":balanced?"ready":"syntax-error"}

@@ -1,0 +1,4 @@
+# Canonical v5 manifest helper
+fn AETHER_manifest()
+  return PROJECT_manifest()
+print str(AETHER_manifest())

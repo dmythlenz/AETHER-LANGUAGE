@@ -1,0 +1,9 @@
+# LSP transport/model contract, implemented in AETHER data structures.
+fn LSP_position(line,character)
+  return {"line":line,"character":character}
+fn LSP_diagnostic(line,column,severity,message)
+  return {"range":{"start":LSP_position(line,column),"end":LSP_position(line,column+1)},"severity":severity,"message":message,"source":"aether"}
+fn LSP_completion(label,kind,detail)
+  return {"label":label,"kind":kind,"detail":detail}
+fn LSP_server()
+  return {"capabilities":["completion","hover","definition","references","diagnostics","formatting","semanticTokens"],"protocol":"LSP"}

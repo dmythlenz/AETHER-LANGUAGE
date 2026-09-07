@@ -1,0 +1,7 @@
+# Network abstraction; sockets/TLS are explicit host capabilities.
+fn NET_get(url)
+  return U_request("net.get",{"url":url},"network")
+fn NET_post(url,body)
+  return U_request("net.post",{"url":url,"body":body},"network")
+fn NET_socket(kind)
+  return U_request("net.socket",{"kind":kind},"network")

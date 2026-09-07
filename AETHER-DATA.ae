@@ -1,0 +1,21 @@
+# Data/index helpers
+fn DATA_group(xs,keyFn)
+  mut out={}
+  let i=0
+  while i<len(xs)
+    let x=get(xs,i)
+    let k=keyFn(x)
+    let bucket=get(out,k)
+    if bucket==0 bucket=[]
+    push(bucket,x)
+    put(out,k,bucket)
+    i+=1
+  return out
+fn DATA_frequency(xs)
+  mut out={}
+  let i=0
+  while i<len(xs)
+    let k=str(get(xs,i))
+    put(out,k,(get(out,k)==0?0:get(out,k))+1)
+    i+=1
+  return out

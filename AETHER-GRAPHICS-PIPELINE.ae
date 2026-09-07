@@ -1,0 +1,9 @@
+# Render-graph contracts; actual GPU submission remains backend-specific.
+fn GFX_pass(name,reads,writes)
+  return {"name":name,"reads":reads,"writes":writes,"state":"declared"}
+fn GFX_frame(passes)
+  return {"passes":passes,"order":sort(passes),"deterministic":true}
+fn GFX_shader(name,stage,source)
+  return {"name":name,"stage":stage,"source":source,"format":"AETHER-SHADER/1"}
+fn GFX_submit(frame)
+  return U_request("gpu.submit",frame,"gpu")

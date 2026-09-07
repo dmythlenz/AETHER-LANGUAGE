@@ -1,20 +1,23 @@
-# AETHER-native deterministic ECS/game layer. Rendering/audio/input are explicit target adapters.
-fn gameTransform(x,y,z)
-  return {"x":x,"y":y,"z":z}
-fn gameVelocity(x,y,z)
-  return {"x":x,"y":y,"z":z}
-fn vecAdd(p,v,dt)
-  return {"x":get(p,"x")+get(v,"x")*dt,"y":get(p,"y")+get(v,"y")*dt,"z":get(p,"z")+get(v,"z")*dt}
-fn gameEntity(id,x,y,z)
-  let e=entity(id)
-  e=addComponent(e,"position",gameTransform(x,y,z))
-  return addComponent(e,"velocity",gameVelocity(0,0,0))
-fn gameSpawn(w,id,x,y,z)
-  return addEntity(w,gameEntity(id,x,y,z))
-fn gameLoop(w,frames,dt)
+# Deterministic ECS game substrate. Device renderer/audio/input remain adapters.
+fn GAME_new()
+  return U_world()
+fn GAME_spawn(w,id,x,y,z)
+  let e=U_entity(id)
+  e=U_component(e,"position",{"x":x,"y":y,"z":z})
+  e=U_component(e,"velocity",{"x":0,"y":0,"z":0})
+  return U_spawn(w,e)
+fn GAME_velocity(w,id,x,y,z)
   let i=0
-  mut s=w
-  while i<frames
-    s=gameStep(s,dt)
+  while i<len(get(w,"entities"))
+    let e=get(get(w,"entities"),i)
+    if get(e,"id")==id
+      put(e,"velocity",{"x":x,"y":y,"z":z})
+      put(get(w,"entities"),i,e)
     i+=1
-  return s
+  return w
+fn GAME_step(w,dt)
+  return U_stepWorld(w,dt)
+fn GAME_render(w)
+  return U_request("game.render",w,"gpu")
+fn GAME_audio(command)
+  return U_request("game.audio",command,"audio")

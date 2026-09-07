@@ -1,0 +1,25 @@
+# AETHER UNIVERSAL v5 — language-native CLI contract
+fn CLI_command(name,args,help)
+  return {"name":name,"args":args,"help":help}
+fn CLI_spec()
+  return [
+    CLI_command("init",[],"create a project manifest"),
+    CLI_command("check",["file"],"lex/semantic validation"),
+    CLI_command("build",["target"],"build deterministic target plan"),
+    CLI_command("run",["file"],"execute AETHER source"),
+    CLI_command("test",[],"run unit/integration/conformance tests"),
+    CLI_command("fmt",["file"],"canonical formatter"),
+    CLI_command("repl",[],"interactive AETHER shell"),
+    CLI_command("debug",["file"],"debug execution session"),
+    CLI_command("profile",["file"],"deterministic trace/profiling"),
+    CLI_command("pkg",["action"],"package install/publish/lock"),
+    CLI_command("doc",["file"],"generate API documentation"),
+    CLI_command("lsp",[],"language-server protocol bridge")
+  ]
+fn CLI_dispatch(command,args)
+  let known=CLI_spec()
+  let i=0
+  while i<len(known)
+    if get(get(known,i),"name")==command return {"ok":true,"command":command,"args":args}
+    i+=1
+  return U_err("CLI","unknown command "+command)
