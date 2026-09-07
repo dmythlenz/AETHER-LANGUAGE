@@ -1,4 +1,4 @@
-# AETHER UNIVERSAL PLATFORM v5.0.0 — FINAL AUDIT
+# AETHER LANGUAGE v7.0.0 / legacy compatibility — FINAL AUDIT
 
 Audited against the current public AETHER repository and the user's existing AETHER Fusion v17 artifact.
 

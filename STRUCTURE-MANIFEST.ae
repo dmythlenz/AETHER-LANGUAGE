@@ -1,0 +1,2 @@
+let roots = ["language","compiler","runtime","std","ai","game","os","web","targets","tooling","tests","docs","examples","apps","compat","kernel"]
+print(len(roots))

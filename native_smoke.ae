@@ -1,0 +1,3 @@
+fn add(a, b) -> a + b
+fn square(x) -> x * x
+fn compare(a, b) -> a >= b

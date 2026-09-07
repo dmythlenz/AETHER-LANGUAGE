@@ -1,0 +1,10 @@
+AETHER LANGUAGE v7.0.0 / legacy compatibility
+
+Archive SHA-256: 1f1aa37b0742502f69eb31f40caa8898ef4ef327e28866a7040d8e12c8f47017
+Files: 50
+Static function-reference unknowns: 0
+Delimiter scan: PASS (static)
+Package integrity: PASS
+
+Boundary: native AETHER source logic vs explicit host/device adapters.
+Runtime execution certification still depends on the installed AetherLang runtime for the specific host target.

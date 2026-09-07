@@ -1,0 +1,13 @@
+# AETHER repository map as Aether-readable metadata
+let repository = {
+    name: "AETHER-LANGUAGE",
+    version: "6.0.0-STRUCTURED",
+    canonical_language: "language",
+    compiler: "compiler",
+    runtime: "runtime",
+    stdlib: "std",
+    targets: "targets",
+    tests: "tests",
+    docs: "docs"
+}
+print(repository.name)

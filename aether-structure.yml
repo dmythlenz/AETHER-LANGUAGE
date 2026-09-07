@@ -1,0 +1,16 @@
+name: AETHER Structure
+on: [push, pull_request]
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify canonical directories
+        shell: bash
+        run: |
+          set -e
+          for d in language compiler runtime std ai game os web targets tooling tests docs examples apps compat kernel; do test -d "$d"; done
+          test -f project.ae
+          test -f language/TYPES-SEMANTICS.ae
+          test -f compiler/AETHER-COMPILER-CONTRACT.ae
+          test -f tests/AETHER-CONFORMANCE.ae

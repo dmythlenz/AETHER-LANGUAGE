@@ -1,0 +1,21 @@
+name: AETHER Bootstrap
+on: [push, pull_request]
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S bootstrap/cpp -B bootstrap/cpp/build
+      - name: Build
+        run: cmake --build bootstrap/cpp/build --parallel
+      - name: Test
+        run: ctest --test-dir bootstrap/cpp/build --output-on-failure
+      - name: Native backend smoke
+        shell: bash
+        run: |
+          set -e
+          bootstrap/cpp/build/aetherc asm bootstrap/cpp/tests/native_smoke.ae > /tmp/aether.s
+          cc -c /tmp/aether.s -o /tmp/aether.o
+          cc bootstrap/cpp/tests/native_smoke.c /tmp/aether.o -o /tmp/aether-native-smoke
+          /tmp/aether-native-smoke

@@ -1,4 +1,4 @@
-# Install / Integrate AETHER UNIVERSAL PLATFORM v5.0.0
+# Install / Integrate AETHER LANGUAGE v7.0.0 / legacy compatibility
 
 Recommended layout inside the existing repository:
 

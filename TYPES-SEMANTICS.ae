@@ -1,0 +1,40 @@
+# AETHER UNIVERSAL v5 — type and semantic contracts
+# Language-native semantic layer. The host interpreter remains the parser authority.
+fn TYPE_name(v)
+  let t=type(v)
+  if t=="number" return "Number"
+  if t=="string" return "String"
+  if t=="boolean" return "Bool"
+  if t=="list" || t=="array" return "List"
+  if t=="dict" || t=="object" return "Dict"
+  return str(t)
+fn TYPE_is(v,name)
+  return TYPE_name(v)==name || name=="Any"
+fn TYPE_assert(v,name)
+  if TYPE_is(v,name) return U_ok(v)
+  return U_err("TYPE","expected "+name+" got "+TYPE_name(v))
+fn TYPE_signature(name,args,ret)
+  return {"name":name,"args":args,"return":ret}
+fn TYPE_union(a,b)
+  if a==b return a
+  return a+"|"+b
+fn TYPE_generic(name,params)
+  return {"name":name,"params":params}
+fn SEM_scope(parent)
+  return {"parent":parent,"bindings":{}}
+fn SEM_bind(scope,name,kind,typ,mutable)
+  put(get(scope,"bindings"),name,{"kind":kind,"type":typ,"mutable":mutable})
+  return scope
+fn SEM_lookup(scope,name)
+  mut s=scope
+  while s!=0
+    let b=get(get(s,"bindings"),name)
+    if b!=0 return b
+    s=get(s,"parent")
+  return 0
+fn SEM_effect(name,capability)
+  return {"name":name,"capability":capability}
+fn SEM_order()
+  return "call-by-value,left-to-right"
+fn SEM_snapshot()
+  return {"scoping":"lexical","evaluation":SEM_order(),"mutation":"explicit-mut","errors":"Result/try-catch","concurrency":"deterministic-actor-dataflow"}

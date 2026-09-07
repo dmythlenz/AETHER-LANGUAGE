@@ -1,4 +1,4 @@
-AETHER UNIVERSAL PLATFORM v5.0.0
+AETHER LANGUAGE v7.0.0 / legacy compatibility
 Verification result
 
 Canonical combined source: PASS
